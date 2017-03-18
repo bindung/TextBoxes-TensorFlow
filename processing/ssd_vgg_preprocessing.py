@@ -224,9 +224,9 @@ def distorted_bounding_box_crop(image,
 
         # Update bounding boxes: resize and filter out.
         bboxes = tfe.bboxes_resize(distort_bbox, bboxes)
-        labels, bboxes = tfe.bboxes_filter_overlap(labels, bboxes,
+        labels, bboxes, num = tfe.bboxes_filter_overlap(labels, bboxes,
                                                    BBOX_CROP_OVERLAP)
-        return cropped_image, labels, bboxes, distort_bbox
+        return cropped_image, labels, bboxes, distort_bbox,num
 
 
 def preprocess_for_train(image, labels, bboxes,
@@ -265,7 +265,7 @@ def preprocess_for_train(image, labels, bboxes,
 
         # Distort image and bounding boxes.
         dst_image = image
-        dst_image, labels, bboxes, distort_bbox = \
+        dst_image, labels, bboxes, distort_bbox ,num= \
             distorted_bounding_box_crop(image, labels, bboxes,
                                         aspect_ratio_range=CROP_RATIO_RANGE)
         # Resize image to output size.
@@ -290,7 +290,7 @@ def preprocess_for_train(image, labels, bboxes,
         # Image data format.
         if data_format == 'NCHW':
             image = tf.transpose(image, perm=(2, 0, 1))
-        return image, labels, bboxes
+        return image, labels, bboxes,num
 
 
 def preprocess_for_eval(image, labels, bboxes,

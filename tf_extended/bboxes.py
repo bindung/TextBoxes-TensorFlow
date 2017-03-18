@@ -414,9 +414,11 @@ def bboxes_filter_overlap(labels, bboxes, threshold=0.5,
         scores = bboxes_intersection(tf.constant([0, 0, 1, 1], bboxes.dtype),
                                      bboxes)
         mask = scores > threshold
+        nmask = tf.cast(mask,tf.int32)
+        num = tf.reduce_sum(nmask)
         labels = tf.boolean_mask(labels, mask)
         bboxes = tf.boolean_mask(bboxes, mask)
-        return labels, bboxes
+        return labels, bboxes,num 
 
 
 def bboxes_filter_labels(labels, bboxes,

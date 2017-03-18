@@ -124,12 +124,12 @@ class TextboxNet(object):
 									  0.5,
 									  dtype)
 
-	def bboxes_encode(self, bboxes, anchors,
+	def bboxes_encode(self, bboxes, anchors, num,
 					  scope='text_bboxes_encode'):
 		"""Encode labels and bounding boxes.
 		"""
 		return textbox_common.tf_text_bboxes_encode(
-						bboxes, anchors,
+						bboxes, anchors, num,
 						matching_threshold=0.1,
 						prior_scaling=self.params.prior_scaling,
 						scope=scope)
@@ -420,8 +420,8 @@ def ssd_losses(logits, localisations,
 
 				nvalues = tf.where(tf.cast(1-ipmask,tf.bool), gscores[i], np.zeros(gscores[i].shape))
 				nvalues_flat = tf.reshape(nvalues, [-1])
-				val, idxes = tf.nn.top_k(nvalues_flat, k=n_neg)
-				minval = val[-1]
+				val, idxes = tf.nn.top_k(nvalues_flat, k=1)
+				minval = val
 				# Final negative mask.
 				nmask = nvalues > minval
 				fnmask = tf.cast(nmask, dtype)

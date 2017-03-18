@@ -240,7 +240,7 @@ def main(_):
 
 			# Pre-processing image, labels and bboxes.
 
-			image, glabels, gbboxes = \
+			image, glabels, gbboxes,num = \
 				ssd_vgg_preprocessing.preprocess_image(image,  glabels,gbboxes, 
 														text_shape,is_training=True,
 														data_format='NHWC')
@@ -249,7 +249,7 @@ def main(_):
 			print 'bboxes num' + str(gbboxes.get_shape())
 			print 'glabes' + str(tf.shape(glabels))
 			glocalisations, gscores = \
-				text_net.bboxes_encode( gbboxes, text_anchors)
+				text_net.bboxes_encode( gbboxes, text_anchors,num)
 			batch_shape = [1] + [len(text_anchors)] * 2
 
 			# Training batches and queue.

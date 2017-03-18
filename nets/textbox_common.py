@@ -12,7 +12,7 @@ import math
 # =========================================================================== #
 
 def tf_text_bboxes_encode_layer(bboxes,
-                               anchors_layer,
+                               anchors_layer, num,
                                matching_threshold=0.1,
                                prior_scaling=[0.1, 0.1, 0.2, 0.2],
                                dtype=tf.float32):
@@ -92,7 +92,8 @@ def tf_text_bboxes_encode_layer(bboxes,
                   feat_ymin, feat_xmin, feat_ymax, feat_xmax):
         """Condition: check label index.
         """
-        r = tf.less(i, tf.shape(bboxes)[0])
+        #r = tf.less(i, tf.shape(bboxes)[0])
+        r = tf.less(i, num)
         return r
 
     def body(i, feat_scores,feat_ymin, feat_xmin, feat_ymax, feat_xmax):
@@ -162,7 +163,7 @@ def tf_text_bboxes_encode_layer(bboxes,
 
 
 def tf_text_bboxes_encode(bboxes,
-                         anchors,
+                         anchors, num,
                          matching_threshold=0.1,
                          prior_scaling=[0.1, 0.1, 0.2, 0.2],
                          dtype=tf.float32,
@@ -188,7 +189,7 @@ def tf_text_bboxes_encode(bboxes,
         for i, anchors_layer in enumerate(anchors):
             with tf.name_scope('bboxes_encode_block_%i' % i):
                 t_loc, t_scores = \
-                    tf_text_bboxes_encode_layer(bboxes, anchors_layer,
+                    tf_text_bboxes_encode_layer(bboxes, anchors_layer, num,
                                                 matching_threshold,
                                                prior_scaling, dtype)
                 target_localizations.append(t_loc)
