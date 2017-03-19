@@ -19,7 +19,7 @@ textname = 'txt'
 imcell = 'imnames'
 wordname = 'wordBB'
 charname = 'charBB'
-NUMoffolder = 1
+NUMoffolder = 200
 
 ## SythText datasets is too big to store in a record. 
 ## So Transform tfrecord according to dir name
@@ -92,7 +92,7 @@ def run():
 		pattern = re.compile(r'^{}\/'.format(dir))
 		i = 0
 		res =[i for i in range(imnames.shape[1]) if pattern.match(imnames[0,i][0]) != None ]
-		print len(res)
+		print "The size of %s folder : %s" % (dir,len(res))
 		# shuffle
 		res = np.random.permutation(res)
 		for j in res:

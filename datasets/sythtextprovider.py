@@ -18,7 +18,7 @@ ITEMS_TO_DESCRIPTIONS = {
     'object/label': 'label'
 }
 SPLITS_TO_SIZES = {
-    'train': 4262,
+    'train': 858750,
 }
 NUM_CLASSES = 2
 
