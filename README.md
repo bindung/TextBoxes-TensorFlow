@@ -25,7 +25,9 @@ output： batch_size * 300 * 300 * 3 image
 
 Finish the design of training(can start training)	
 
-	python train.py \
+TASET_DIR=./data/sythtext/
+TRAIN_DIR=./logs/
+python Train.py \
     --train_dir=${TRAIN_DIR} \
     --dataset_dir=${DATASET_DIR} \
     --save_summaries_secs=60 \
@@ -33,8 +35,9 @@ Finish the design of training(can start training)
     --weight_decay=0.0005 \
     --optimizer=adam \
     --learning_rate=0.001 \
-    --batch_size=32
-
+    --batch_size=16 \
+    --num_clones=1 \
+    --gpu_memory_fraction=0.5 
 # Problems to be solved： 
 	1. Need to redesign visualization		
 	2. image_processing can be improved
