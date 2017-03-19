@@ -5,11 +5,13 @@
 
 import numpy as np 
 import scipy.io as sio
-import os
+import os, os.path
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
 import tensorflow as tf
 import re
 from datasets.dataset_utils import int64_feature, float_feature, bytes_feature ,ImageCoder, norm
-import cv2
+
 from PIL import Image
 
 data_path = 'data/sythtext/'
@@ -62,14 +64,14 @@ def _processing_image(wordbb, imname,coder):
 	bbox = []
 	[xmin, ymin]= np.min(wordbb,1)
 	[xmax, ymax] = np.max(wordbb,1)
-	xmin = np.maximum(xmin, 0)
-	ymin = np.maximum(ymin, 0)
-	xmax = np.minimum(xmax, 1)
-	ymax = np.minimum(ymax, 1)
+	xmin = np.maximum(xmin/shape[1], 0)
+	ymin = np.maximum(ymin/shape[0], 0)
+	xmax = np.minimum(xmax/shape[1], 1)
+	ymax = np.minimum(ymax/shape[0], 1)
 	if numofbox > 1:
-		bbox = [[ymin[i]/shape[0],xmin[i]/shape[1],ymax[i]/shape[0],xmax[i]/shape[1]] for i in range(numofbox)] 
+		bbox = [[ymin[i],xmin[i],ymax[i],xmax[i]] for i in range(numofbox)] 
 	if numofbox == 1:
-		bbox = [[ymin/shape[0],xmin/shape[1],ymax/shape[0],xmax/shape[1]]]
+		bbox = [[ymin,xmin,ymax,xmax]]
 
 
 	label = [1 for i in range(numofbox)]

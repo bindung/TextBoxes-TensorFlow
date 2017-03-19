@@ -16,7 +16,9 @@
 
 import tensorflow as tf
 from tensorflow.python.ops import control_flow_ops
-
+import os, os.path
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
 from datasets import sythtextprovider
 from deployment import model_deploy
 from nets import txtbox_300
@@ -42,7 +44,7 @@ tf.app.flags.DEFINE_float(
 tf.app.flags.DEFINE_string(
 	'train_dir', '/tmp/tfmodel/',
 	'Directory where checkpoints and event logs are written to.')
-tf.app.flags.DEFINE_integer('num_clones', 1,
+tf.app.flags.DEFINE_integer('num_clones', 6,
 							'Number of model clones to deploy.')
 tf.app.flags.DEFINE_boolean('clone_on_cpu', False,
 							'Use CPUs to deploy clones.')
@@ -62,7 +64,7 @@ tf.app.flags.DEFINE_integer(
 tf.app.flags.DEFINE_integer(
 	'save_interval_secs', 600,
 	'The frequency with which the model is saved, in seconds.')
-tf.app.flags.DEFINE_integer(
+tf.app.flags.DEFINE_float(
 	'gpu_memory_fraction', 0.75, 'GPU memory fraction to use.')
 
 # =========================================================================== #
@@ -380,7 +382,8 @@ def main(_):
 		# =================================================================== #
 		gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=FLAGS.gpu_memory_fraction)
 		config = tf.ConfigProto(log_device_placement=False,
-								gpu_options=gpu_options)
+								gpu_options=gpu_options,
+								allow_soft_placement = True)
 		saver = tf.train.Saver(max_to_keep=5,
 							   keep_checkpoint_every_n_hours=1.0,
 							   write_version=2,
