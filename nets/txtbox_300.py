@@ -130,7 +130,7 @@ class TextboxNet(object):
 		"""
 		return textbox_common.tf_text_bboxes_encode(
 						bboxes, anchors, num,
-						matching_threshold=0.1,
+						matching_threshold=0.5,
 						prior_scaling=self.params.prior_scaling,
 						scope=scope)
 

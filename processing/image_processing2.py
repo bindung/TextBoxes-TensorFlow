@@ -143,11 +143,11 @@ def image_processing(image_buffer, bbox,labels, train,thread_id = 0):
 	Width = FLAGS.Width
 
 	if train:
-		image,labels,bbox = distorted_image(image, Height,labels,Width,bbox,thread_id)
+		image,labels,bbox,num = distorted_image(image, Height,labels,Width,bbox,thread_id)
 	else:
 		image = eval_image(image, Height, Width)
 
-	return image, labels, bbox
+	return image, labels2, bbox,num
 
 def distorted_image(image, height,labels,width,bbox,thread_id,scope = None):
 	# Each bounding box has shape [1, num_boxes, box coords] and
@@ -200,9 +200,9 @@ def distorted_image(image, height,labels,width,bbox,thread_id,scope = None):
 
 		bboxes = tfe.bboxes_resize(distort_bbox, bbox)
 		print "labels: %s " % (labels)
-		label, bboxes = tfe.bboxes_filter_overlap(labels, bboxes,threshold = 0.4)
+		label, bboxes,num = tfe.bboxes_filter_overlap(labels, bboxes,threshold = 0.4)
 
-		return distorted_image, label, bboxes
+		return distorted_image, label, bboxes,num
 
 
 

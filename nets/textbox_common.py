@@ -13,7 +13,7 @@ import math
 
 def tf_text_bboxes_encode_layer(bboxes,
                                anchors_layer, num,
-                               matching_threshold=0.1,
+                               matching_threshold=0.5,
                                prior_scaling=[0.1, 0.1, 0.2, 0.2],
                                dtype=tf.float32):
     
@@ -164,7 +164,7 @@ def tf_text_bboxes_encode_layer(bboxes,
 
 def tf_text_bboxes_encode(bboxes,
                          anchors, num,
-                         matching_threshold=0.1,
+                         matching_threshold=0.5,
                          prior_scaling=[0.1, 0.1, 0.2, 0.2],
                          dtype=tf.float32,
                          scope='text_bboxes_encode'):
