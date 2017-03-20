@@ -15,9 +15,9 @@ Pre-processing images :
 import tensorflow as tf
 import tf_extended as tfe
 import os
-import matplotlib.pyplot as plt
-import skimage.io as skio
-import cv2
+#import matplotlib.pyplot as plt
+#import skimage.io as skio
+#import cv2
 
 
 FLAGS = tf.app.flags.FLAGS
@@ -147,7 +147,7 @@ def image_processing(image_buffer, bbox,labels, train,thread_id = 0):
 	else:
 		image = eval_image(image, Height, Width)
 
-	return image, labels2, bbox,num
+	return image, labels, bbox,num
 
 def distorted_image(image, height,labels,width,bbox,thread_id,scope = None):
 	# Each bounding box has shape [1, num_boxes, box coords] and

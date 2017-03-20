@@ -22,7 +22,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
 from datasets import sythtextprovider
 from deployment import model_deploy
 from nets import txtbox_300
-from processing import image_processing
+#from processing import image_processing
 from processing import ssd_vgg_preprocessing
 import tf_utils
 
