@@ -207,6 +207,7 @@ def distorted_bounding_box_crop(image,
     with tf.name_scope(scope, 'distorted_bounding_box_crop', [image, bboxes]):
         # Each bounding box has shape [1, num_boxes, box coords] and
         # the coordinates are ordered [ymin, xmin, ymax, xmax].
+        bboxes = tf.maximum(bboxes, 1.0)
         bbox_begin, bbox_size, distort_bbox = tf.image.sample_distorted_bounding_box(
                 tf.shape(image),
                 bounding_boxes=tf.expand_dims(bboxes, 0),
@@ -256,7 +257,7 @@ def preprocess_for_train(image, labels, bboxes,
         # Convert to float scaled [0, 1].
         if image.dtype != tf.float32:
             image = tf.image.convert_image_dtype(image, dtype=tf.float32)
-        tf_summary_image(image, bboxes, 'image_with_bboxes')
+        #tf_summary_image(image, bboxes, 'image_with_bboxes')
 
         # # Remove DontCare labels.
         # labels, bboxes = ssd_common.tf_bboxes_filter_labels(out_label,

@@ -197,7 +197,7 @@ def main(_):
 			num_replicas=1,
 			num_ps_tasks=0)
 		# Create global_step.
-		with tf.device(deploy_config.variables_device()):
+		with tf.device('\gpu:5'):
 			global_step = slim.create_global_step()
 
 		# Select the dataset.
@@ -225,7 +225,7 @@ def main(_):
 		# =================================================================== #
 		# Create a dataset provider and batches.
 		# =================================================================== #
-		with tf.device(deploy_config.inputs_device()):
+		with tf.device('\gpu:5'):
 			with tf.name_scope(FLAGS.dataset_name + '_data_provider'):
 				provider = slim.dataset_data_provider.DatasetDataProvider(
 					dataset,
@@ -341,7 +341,7 @@ def main(_):
 		# =================================================================== #
 		# Configure the optimization procedure.
 		# =================================================================== #
-		with tf.device(deploy_config.optimizer_device()):
+		with tf.device('\gpu:5'):
 			learning_rate = tf_utils.configure_learning_rate(FLAGS,
 															 dataset.num_samples,
 															 global_step)
