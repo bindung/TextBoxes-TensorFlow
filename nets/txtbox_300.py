@@ -67,8 +67,6 @@ class TextboxNet(object):
 			self.params = params
 		else:
 			self.params = self.default_params
-			#self.params.step = (scale_range[1] - scale_range[0])/ 5 
-			#self.params.scales = [scale_range[0] + i* self.params.step for i in range(6)]
 
 	# ======================================================================= #
 	def net(self, inputs,
@@ -86,12 +84,7 @@ class TextboxNet(object):
 					dropout_keep_prob=dropout_keep_prob,
 					reuse=reuse,
 					scope=scope)
-		# Update feature shapes (try at least!)
-		"""
-		if update_feat_shapes:
-			shapes = ssd_feat_shapes_from_net(r[0], self.params.feat_shapes)
-			self.params = self.params._replace(feat_shapes=shapes)
-		"""
+
 		return r
 
 	def arg_scope(self, weight_decay=0.0005, data_format='NHWC'):
@@ -99,32 +92,18 @@ class TextboxNet(object):
 		"""
 		return ssd_arg_scope(weight_decay, data_format=data_format)
 
-	def arg_scope_caffe(self, caffe_scope):
-		"""Caffe arg_scope used for weights importing.
-		"""
-		return ssd_arg_scope_caffe(caffe_scope)
-
-	# ======================================================================= #
-	'''
-	def update_feature_shapes(self, predictions):
-		"""Update feature shapes from predictions collection (Tensor or Numpy
-		array).
-		"""
-		shapes = ssd_feat_shapes_from_net(predictions, self.params.feat_shapes)
-		self.params = self.params._replace(feat_shapes=shapes)
-	'''
 
 	def anchors(self, img_shape, dtype=np.float32):
 		"""Compute the default anchor boxes, given an image shape.
 		"""
-		return textbox_achor_all_layers(img_shape,
+		return textbox_common.textbox_achor_all_layers(img_shape,
 									  self.params.feat_shapes,
 									  self.params.anchor_ratios,
 									  self.params.scales,
 									  0.5,
 									  dtype)
 
-	def bboxes_encode(self, bboxes, anchors, num,
+	def bboxes_encode(self, bboxes, anchors, num,match_threshold = 0.5,
 					  scope='text_bboxes_encode'):
 		"""Encode labels and bounding boxes.
 		"""
@@ -136,14 +115,14 @@ class TextboxNet(object):
 
 	def losses(self, logits, localisations,
 			   glocalisations, gscores,
-			   match_threshold=0.1,
+			   match_threshold=0.5,
 			   negative_ratio=3.,
 			   alpha=1.,
 			   label_smoothing=0.,
-			   scope='ssd_losses'):
+			   scope='text_box_loss'):
 		"""Define the SSD network losses.
 		"""
-		return ssd_losses(logits, localisations,
+		return text_losses(logits, localisations,
 						  glocalisations, gscores,
 						  match_threshold=match_threshold,
 						  negative_ratio=negative_ratio,
@@ -168,20 +147,20 @@ def text_net(inputs,
 		net = slim.max_pool2d(net, [2, 2], scope='pool1')
 		# Block 2.
 		net = slim.repeat(net, 2, slim.conv2d, 128, [3, 3], scope='conv2')
-		end_points['conv2'] = net
+		end_points['conv2'] = net # 150,150 128
 		net = slim.max_pool2d(net, [2, 2], scope='pool2')
-		# Block 3.
+		# Block 3. # 75 75 256
 		net = slim.repeat(net, 3, slim.conv2d, 256, [3, 3], scope='conv3')
 		end_points['conv3'] = net
-		net = slim.max_pool2d(net, [2, 2], scope='pool3')
-		# Block 4.
+		net = slim.max_pool2d(net, [2, 2], scope='pool3',padding='SAME')
+		# Block 4. # 38 38 512
 		net = slim.repeat(net, 3, slim.conv2d, 512, [3, 3], scope='conv4')
 		end_points['conv4'] = net
 		net = slim.max_pool2d(net, [2, 2], scope='pool4')
-		# Block 5.
+		# Block 5. # 19 19 512
 		net = slim.repeat(net, 3, slim.conv2d, 512, [3, 3], scope='conv5')
 		end_points['conv5'] = net
-		net = slim.max_pool2d(net, [3, 3], stride=1, scope='pool5')
+		net = slim.max_pool2d(net, [3, 3], stride=1, scope='pool5',padding='SAME')
 
 		# Additional SSD blocks.
 		# Block 6: let's dilate the hell out of it!
@@ -194,25 +173,25 @@ def text_net(inputs,
 		# Block 8/9/10/11: 1x1 and 3x3 convolutions stride 2 (except lasts).
 		end_point = 'conv8'
 		with tf.variable_scope(end_point):
-			net = slim.conv2d(net, 256, [1, 1], scope='conv1x1')
-			net = custom_layers.pad2d(net, pad=(1, 1))
-			net = slim.conv2d(net, 512, [3, 3], stride=2, scope='conv3x3', padding='VALID')
+		    net = slim.conv2d(net, 256, [1, 1], scope='conv1x1')
+		    net = custom_layers.pad2d(net, pad=(1, 1))
+		    net = slim.conv2d(net, 512, [3, 3], stride=2, scope='conv3x3', padding='VALID')
 		end_points[end_point] = net
 		end_point = 'conv9'
 		with tf.variable_scope(end_point):
-			net = slim.conv2d(net, 128, [1, 1], scope='conv1x1')
-			net = custom_layers.pad2d(net, pad=(1, 1))
-			net = slim.conv2d(net, 256, [3, 3], stride=2, scope='conv3x3', padding='VALID')
+		    net = slim.conv2d(net, 128, [1, 1], scope='conv1x1')
+		    net = custom_layers.pad2d(net, pad=(1, 1))
+		    net = slim.conv2d(net, 256, [3, 3], stride=2, scope='conv3x3', padding='VALID')
 		end_points[end_point] = net
 		end_point = 'conv10'
 		with tf.variable_scope(end_point):
-			net = slim.conv2d(net, 128, [1, 1], scope='conv1x1')
-			net = slim.conv2d(net, 256, [3, 3], scope='conv3x3', padding='VALID')
+		    net = slim.conv2d(net, 128, [1, 1], scope='conv1x1')
+		    net = slim.conv2d(net, 256, [3, 3], scope='conv3x3', padding='VALID')
 		end_points[end_point] = net
 		end_point = 'global'
 		with tf.variable_scope(end_point):
-			net = slim.conv2d(net, 128, [1, 1], scope='conv1x1')
-			net = slim.conv2d(net, 256, [3, 3], scope='conv3x3', padding='VALID')
+		    net = slim.conv2d(net, 128, [1, 1], scope='conv1x1')
+		    net = slim.conv2d(net, 256, [3, 3], scope='conv3x3', padding='VALID')
 		end_points[end_point] = net
 
 		# Prediction and localisations layers.
@@ -272,65 +251,8 @@ def text_multibox_layer(layer,
 
 
 
-## produce anchor for one layer
-# each feature point has 12 default textboxes(6 boxes + 6 offsets boxes)
-# aspect ratios = (1,2,3,5,7,10)
-# feat_size :
-	# conv4_3 ==> 38 x 38
-	# fc7 ==> 19 x 19
-	# conv6_2 ==> 10 x 10
-	# conv7_2 ==> 5 x 5
-	# conv8_2 ==> 3 x 3
-	# pool6 ==> 1 x 1
-
-def textbox_anchor_one_layer(img_shape,
-							 feat_size,
-							 ratios,
-							 scale,
-							 offset = 0.5,
-							 dtype=np.float32):
-	# Follow the papers scheme
-	# 12 ahchor boxes with out sk' = sqrt(sk * sk+1)
-	y, x = np.mgrid[0:feat_size[0], 0:feat_size[1]] + 0.5
-	y = y.astype(dtype) / feat_size[0]
-	x = x.astype(dtype) / feat_size[1]
-	x_offset = x
-	y_offset = y + offset
-	x_out = np.stack((x, x_offset), -1)
-	y_out = np.stack((y, y_offset), -1)
-	y_out = np.expand_dims(y_out, axis=-1)
-	x_out = np.expand_dims(x_out, axis=-1)
 
 
-	# 
-	num_anchors = 6
-	h = np.zeros((num_anchors, ), dtype=dtype)
-	w = np.zeros((num_anchors, ), dtype=dtype)
-	for i ,r in enumerate(ratios):
-		h[i] = scale / math.sqrt(r) / feat_size[0]
-		w[i] = scale * math.sqrt(r) / feat_size[1]
-	return y_out, x_out, h, w
-
-
-
-## produce anchor for all layers
-def textbox_achor_all_layers(img_shape,
-						   layers_shape,
-						   anchor_ratios,
-						   scales,
-						   offset=0.5,
-						   dtype=np.float32):
-	"""
-	Compute anchor boxes for all feature layers.
-	"""
-	layers_anchors = []
-	for i, s in enumerate(layers_shape):
-		anchor_bboxes = textbox_anchor_one_layer(img_shape, s,
-												 anchor_ratios,
-												 scales[i],
-												 offset=offset, dtype=dtype)
-		layers_anchors.append(anchor_bboxes)
-	return layers_anchors
 
 def ssd_arg_scope(weight_decay=0.0005, data_format='NHWC'):
 	"""Defines the VGG arg scope.
@@ -356,36 +278,11 @@ def ssd_arg_scope(weight_decay=0.0005, data_format='NHWC'):
 				return sc
 
 
-# =========================================================================== #
-# Caffe scope: importing weights at initialization.
-# =========================================================================== #
-def ssd_arg_scope_caffe(caffe_scope):
-	"""Caffe scope definition.
-
-	Args:
-	  caffe_scope: Caffe scope object with loaded weights.
-
-	Returns:
-	  An arg_scope.
-	"""
-	# Default network arg scope.
-	with slim.arg_scope([slim.conv2d],
-						activation_fn=tf.nn.relu,
-						weights_initializer=caffe_scope.conv_weights_init(),
-						biases_initializer=caffe_scope.conv_biases_init()):
-		with slim.arg_scope([slim.fully_connected],
-							activation_fn=tf.nn.relu):
-			with slim.arg_scope([custom_layers.l2_normalization],
-								scale_initializer=caffe_scope.l2_norm_scale_init()):
-				with slim.arg_scope([slim.conv2d, slim.max_pool2d],
-									padding='SAME') as sc:
-					return sc
-
 
 # =========================================================================== #
 # Text loss function.
 # =========================================================================== #
-def ssd_losses(logits, localisations,
+def text_losses(logits, localisations,
 			   glocalisations, gscores,
 			   match_threshold=0.1,
 			   negative_ratio=3.,
@@ -394,12 +291,13 @@ def ssd_losses(logits, localisations,
 			   scope=None):
 	"""Loss functions for training the text box network.
 
-
 	Arguments:
 	  logits: (list of) predictions logits Tensors;
 	  localisations: (list of) localisations Tensors;
 	  glocalisations: (list of) groundtruth localisations Tensors;
 	  gscores: (list of) groundtruth score Tensors;
+
+	return: loss
 	"""
 	with tf.name_scope(scope, 'text_loss'):
 		l_cross_pos = []
@@ -415,26 +313,10 @@ def ssd_losses(logits, localisations,
 				nmask = gscores[i] < match_threshold
 				inmask = tf.cast(nmask, tf.int32)
 				fnmask = tf.cast(pmask, dtype)
-				num = tf.ones(gscores)
+				num = tf.ones_like(gscores[i])
 				n = tf.reduce_sum(num) + 1e-5
 
-				'''
-				n_positives = tf.reduce_sum(fpmask)
-
-				# Negative mask
-				# Number of negative entries to select.
-				n_neg = tf.cast(negative_ratio * n_positives, tf.int32)
-
-				nvalues = tf.where(tf.cast(1-ipmask,tf.bool), gscores[i], np.zeros(gscores[i].shape))
-				nvalues_flat = tf.reshape(nvalues, [-1])
-				val, idxes = tf.nn.top_k(nvalues_flat, k=1)
-				minval = val
-				# Final negative mask.
-				nmask = nvalues > minval
-				fnmask = tf.cast(nmask, dtype)
-				inmask = tf.cast(nmask, tf.int32)
-
-				'''
+				
 				# Add cross-entropy loss.
 				with tf.name_scope('cross_entropy_pos'):
 					loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits[i],
@@ -469,6 +351,9 @@ def ssd_losses(logits, localisations,
 			tf.add_to_collection('EXTRA_LOSSES', total_cross)
 			tf.add_to_collection('EXTRA_LOSSES', total_loc)
 
+			total_loss = tf.add(total_loc, total_cross, 'total_loss')
+
+		return total_loss
 
 
 

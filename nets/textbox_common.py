@@ -34,9 +34,6 @@ def tf_text_bboxes_encode_layer(bboxes,
     # Anchors coordinates and volume.
 
     yref, xref, href, wref = anchors_layer
-    print yref.shape
-    print href.shape
-    print bboxes.shape
     ymin = yref - href / 2.
     xmin = xref - wref / 2.
     ymax = yref + href / 2.
@@ -197,4 +194,64 @@ def tf_text_bboxes_encode(bboxes,
         return target_localizations, target_scores
 
 
+## produce anchor for one layer
+# each feature point has 12 default textboxes(6 boxes + 6 offsets boxes)
+# aspect ratios = (1,2,3,5,7,10)
+# feat_size :
+    # conv4_3 ==> 38 x 38
+    # fc7 ==> 19 x 19
+    # conv6_2 ==> 10 x 10
+    # conv7_2 ==> 5 x 5
+    # conv8_2 ==> 3 x 3
+    # pool6 ==> 1 x 1
+
+def textbox_anchor_one_layer(img_shape,
+                             feat_size,
+                             ratios,
+                             scale,
+                             offset = 0.5,
+                             dtype=np.float32):
+    # Follow the papers scheme
+    # 12 ahchor boxes with out sk' = sqrt(sk * sk+1)
+    y, x = np.mgrid[0:feat_size[0], 0:feat_size[1]] + 0.5
+    y_offset = y + offset
+    y = y.astype(dtype) / feat_size[0]
+    x = x.astype(dtype) / feat_size[1]
+    x_offset = x
+    y_offset = y_offset.astype(dtype) / feat_size[1]
+    x_out = np.stack((x, x_offset), -1)
+    y_out = np.stack((y, y_offset), -1)
+    y_out = np.expand_dims(y_out, axis=-1)
+    x_out = np.expand_dims(x_out, axis=-1)
+
+
+    # 
+    num_anchors = 6
+    h = np.zeros((num_anchors, ), dtype=dtype)
+    w = np.zeros((num_anchors, ), dtype=dtype)
+    for i ,r in enumerate(ratios):
+        h[i] = scale / math.sqrt(r) 
+        w[i] = scale * math.sqrt(r) 
+    return y_out, x_out, h, w
+
+
+
+## produce anchor for all layers
+def textbox_achor_all_layers(img_shape,
+                           layers_shape,
+                           anchor_ratios,
+                           scales,
+                           offset=0.5,
+                           dtype=np.float32):
+    """
+    Compute anchor boxes for all feature layers.
+    """
+    layers_anchors = []
+    for i, s in enumerate(layers_shape):
+        anchor_bboxes = textbox_anchor_one_layer(img_shape, s,
+                                                 anchor_ratios,
+                                                 scales[i],
+                                                 offset=offset, dtype=dtype)
+        layers_anchors.append(anchor_bboxes)
+    return layers_anchors
 

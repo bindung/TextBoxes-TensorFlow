@@ -35,6 +35,10 @@ from tensorflow.python.ops import random_ops
 from tensorflow.python.ops import variables
 
 
+
+_R_MEAN = 123.
+_G_MEAN = 117.
+_B_MEAN = 104.
 # =========================================================================== #
 # Modification of TensorFlow image routines.
 # =========================================================================== #
@@ -304,3 +308,89 @@ def random_flip_left_right(image, bboxes, seed=None):
                                        lambda: bboxes)
         return fix_image_flip_shape(image, result), bboxes
 
+
+def distort_color(image, scope=None):
+    """Distort the color of the image.
+
+    Each color distortion is non-commutative and thus ordering of the color ops
+    matters. Ideally we would randomly permute the ordering of the color ops.
+    Rather then adding that level of complication, we select a distinct ordering
+    of color ops for each preprocessing thread.
+
+    Args:
+    image: Tensor containing single image.
+    thread_id: preprocessing thread ID.
+    scope: Optional scope for op_scope.
+    Returns:
+    color-distorted image
+    """
+    color_ordering = np.random.randint(2)
+    if color_ordering == 0:
+      image = tf.image.random_brightness(image, max_delta=32. / 255.)
+      image = tf.image.random_saturation(image, lower=0.5, upper=1.5)
+      image = tf.image.random_hue(image, max_delta=0.2)
+      image = tf.image.random_contrast(image, lower=0.5, upper=1.5)
+    elif color_ordering == 1:
+      image = tf.image.random_brightness(image, max_delta=32. / 255.)
+      image = tf.image.random_contrast(image, lower=0.5, upper=1.5)
+      image = tf.image.random_saturation(image, lower=0.5, upper=1.5)
+      image = tf.image.random_hue(image, max_delta=0.2)
+
+    # The random_* ops do not necessarily clamp.
+    image = tf.clip_by_value(image, 0.0, 1.0)
+    return image
+
+def tf_summary_image(image, bboxes, name='image', unwhitened=False):
+    """Add image with bounding boxes to summary.
+    """
+    if unwhitened:
+        image = tf_image_unwhitened(image)
+    image = tf.expand_dims(image, 0)
+    bboxes = tf.expand_dims(bboxes, 0)
+    image_with_box = tf.image.draw_bounding_boxes(image, bboxes)
+    tf.summary.image(name, image_with_box)
+
+
+def tf_image_whitened(image, means=[_R_MEAN, _G_MEAN, _B_MEAN]):
+    """Subtracts the given means from each image channel.
+
+    Returns:
+        the centered image.
+    """
+    if image.get_shape().ndims != 3:
+        raise ValueError('Input must be of size [height, width, C>0]')
+    num_channels = image.get_shape().as_list()[-1]
+    if len(means) != num_channels:
+        raise ValueError('len(means) must match the number of channels')
+
+    mean = tf.constant(means, dtype=image.dtype)
+    image = image - mean
+    return image
+
+
+def tf_image_unwhitened(image, means=[_R_MEAN, _G_MEAN, _B_MEAN], to_int=True):
+    """Re-convert to original image distribution, and convert to int if
+    necessary.
+
+    Returns:
+      Centered image.
+    """
+    mean = tf.constant(means, dtype=image.dtype)
+    image = image + mean
+    if to_int:
+        image = tf.cast(image, tf.int32)
+    return image
+
+
+def np_image_unwhitened(image, means=[_R_MEAN, _G_MEAN, _B_MEAN], to_int=True):
+    """Re-convert to original image distribution, and convert to int if
+    necessary. Numpy version.
+
+    Returns:
+      Centered image.
+    """
+    img = np.copy(image)
+    img += np.array(means, dtype=img.dtype)
+    if to_int:
+        img = img.astype(np.uint8)
+    return img
