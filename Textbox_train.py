@@ -143,6 +143,8 @@ tf.app.flags.DEFINE_integer(
 	'train_image_size', None, 'Train image size')
 tf.app.flags.DEFINE_integer('max_number_of_steps', None,
 							'The maximum number of training steps.')
+tf.app.flags.DEFINE_integer('num_samples', 800000,
+							'Num of training set')
 # =========================================================================== #
 # Fine-Tuning Flags.
 # =========================================================================== #
@@ -171,8 +173,7 @@ def main(_):
 
 		# Create global_step.
         with tf.device(FLAGS.gpu_train):
-            global_step = slim.create_global_step()
-
+        	global_step = slim.create_global_step()
 		# create batch dataset
 		with tf.device(FLAGS.gpu_data):
 
@@ -222,7 +223,7 @@ def main(_):
 
 		with tf.device(FLAGS.gpu_train):
 			learning_rate = tf_utils.configure_learning_rate(FLAGS,
-                                                             dataset.num_samples,
+                                                             FLAGS.num_samples,
                                                              global_step)
 			# Configure the optimization procedure
 			optimizer = tf_utils.configure_optimizer(FLAGS, learning_rate)
