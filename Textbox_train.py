@@ -97,7 +97,7 @@ tf.app.flags.DEFINE_float('rmsprop_decay', 0.9, 'Decay term for RMSProp.')
 # =========================================================================== #
 tf.app.flags.DEFINE_string(
 	'learning_rate_decay_type',
-	'fixed',
+	'exponential',
 	'Specifies how the learning rate is decayed. One of "fixed", "exponential",'
 	' or "polynomial"')
 tf.app.flags.DEFINE_float('learning_rate', 0.001, 'Initial learning rate.')
@@ -109,7 +109,7 @@ tf.app.flags.DEFINE_float(
 tf.app.flags.DEFINE_float(
 	'learning_rate_decay_factor', 0.94, 'Learning rate decay factor.')
 tf.app.flags.DEFINE_float(
-	'num_epochs_per_decay', 10,
+	'num_epochs_per_decay', 1,
 	'Number of epochs after which learning rate decays.')
 tf.app.flags.DEFINE_float(
 	'moving_average_decay', None,
@@ -169,7 +169,10 @@ def main(_):
 		out_shape = net.params.img_shape
 		anchors = net.anchors(out_shape)
 
-		init_op = tf.global_variables_initializer()
+		# Create global_step.
+        with tf.device(FLAGS.gpu_train):
+            global_step = slim.create_global_step()
+
 		# create batch dataset
 		with tf.device(FLAGS.gpu_data):
 
@@ -218,9 +221,12 @@ def main(_):
 			summaries.add(tf.summary.histogram(variable.op.name, variable))
 
 		with tf.device(FLAGS.gpu_train):
+			learning_rate = tf_utils.configure_learning_rate(FLAGS,
+                                                             dataset.num_samples,
+                                                             global_step)
 			# Configure the optimization procedure
-			optimizer = tf_utils.configure_optimizer(FLAGS, FLAGS.learning_rate)
-			summaries.add(tf.summary.scalar('learning_rate', FLAGS.learning_rate))
+			optimizer = tf_utils.configure_optimizer(FLAGS, learning_rate)
+			summaries.add(tf.summary.scalar('learning_rate', learning_rate))
 
 			## Training 
 
