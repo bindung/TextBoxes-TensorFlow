@@ -240,10 +240,10 @@ def text_multibox_layer(layer,
 	# Class prediction.
 	scores_pred = 2 * num_anchors * num_classes
 	if(layer == 'global'):
-		sco_pred = slim.conv2d(net, scores_pred, [1, 1], activation_fn=None, padding = 'VALID',
+		sco_pred = slim.conv2d(net, scores_pred, [1, 1], activation_fn=tf.nn.relu, padding = 'VALID',
 						   scope='conv_cls')
 	else:
-		sco_pred = slim.conv2d(net, scores_pred, [1, 5], activation_fn=None, padding = 'SAME',
+		sco_pred = slim.conv2d(net, scores_pred, [1, 5], activation_fn=tf.nn.relu, padding = 'SAME',
 						   scope='conv_cls')
 	#cls_pred = custom_layers.channel_to_last(cls_pred)
 	sco_pred = tf.reshape(sco_pred, sco_pred.get_shape().as_list()[:-1] + [2,num_anchors,num_classes])
