@@ -1,9 +1,9 @@
 # TextBoxes-TensorFlow
 TextBoxes re-implementation using tensorflow.
-This project is greatly inspired by [slim project](https://github.com/tensorflow/models/tree/master/slim)
-And many functions are modified based on [SSD-tensorflow project](https://github.com/balancap/SSD-Tensorflow)
-Later, we will overwrite this project so make it more
-flexiable and modularized.
+Much more info can be found in [Textbox](https://arxiv.org/pdf/1611.06779.pdf) and [SSD](https://arxiv.org/abs/1512.02325)
+This project is greatly inspired by [slim project](https://github.com/tensorflow/models/tree/master/slim)  
+And many functions are modified based on [SSD-tensorflow project](https://github.com/balancap/SSD-Tensorflow)  
+Now the pipeline is much clear and can be resued in any tf projects.
 
 Author: 
 	Daitao Xing : dx383@nyu.edu
@@ -36,16 +36,19 @@ Finish the design of training(can start training)
 		--optimizer=adam \
 		--learning_rate=0.001 \
 		--batch_size=2 \
-	    --gpu_data=/cpu:0 \
-	    --gpu_train=/cpu:0
-# Problems to be solved： 
-	1. Need to redesign visualization		
-	2. image_processing can be improved
+	    	--gpu_data=/cpu:0 \
+		--gpu_train=/cpu:0
 		
-# Next steps:
- 
-1. traing on other datasets
-2. fine tunes
-3. test
-4. automatic downloading datasets and so on
+2017/ 03/29
+
+Overwrite all files, so make the training pipeline much clear.
+	
+	1. Write the load_batch . This can be resued in any preproceesing jobs.
+	2. Rewrite the traning file, so make the pipeline more clear.
+
+# Problems to be solved： 
+	1. The loss decreases slowly after 2000 iterations, find why?		
+	2. Prepare the other two datasets(transform into tf.record)
+	3. Evaluation part scripts.
+
 
