@@ -143,7 +143,7 @@ tf.app.flags.DEFINE_integer(
 	'train_image_size', None, 'Train image size')
 tf.app.flags.DEFINE_integer('max_number_of_steps', None,
 							'The maximum number of training steps.')
-tf.app.flags.DEFINE_integer('num_samples', 800000,
+tf.app.flags.DEFINE_integer('num_samples', 12800,
 							'Num of training set')
 # =========================================================================== #
 # Fine-Tuning Flags.
@@ -236,7 +236,7 @@ def main(_):
 		# =================================================================== #
 		# Kicks off the training.
 		# =================================================================== #
-		gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=FLAGS.gpu_memory_fraction)
+		#gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=FLAGS.gpu_memory_fraction)
 		config = tf.ConfigProto(log_device_placement=False,
 								gpu_options=gpu_options,
 								allow_soft_placement = True)
