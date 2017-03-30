@@ -306,7 +306,7 @@ def text_losses(logits, localisations,
 		for i in range(len(logits)):
 			dtype = logits[i].dtype
 			with tf.name_scope('block_%i' % i):
-				'''
+				
 				# Determine weights Tensor.
 				pmask = gscores[i] > match_threshold
 				ipmask = tf.cast(pmask, tf.int32)
@@ -339,7 +339,7 @@ def text_losses(logits, localisations,
 					loss = tf.reduce_sum(loss) / n
 					l_loc.append(loss)
 				'''
-								# Determine weights Tensor.
+				# Determine weights Tensor.
 
 				pmask = gscores[i] > match_threshold
 				ipmask = tf.cast(pmask, tf.int32)
@@ -370,6 +370,7 @@ def text_losses(logits, localisations,
 					loss = custom_layers.abs_smooth(localisations[i] - glocalisations[i])
 					loss = tf.losses.compute_weighted_loss(loss, weights)
 					l_loc.append(loss)
+				'''
 		# Additional total losses...
 		with tf.name_scope('total'):
 			total_cross_pos = tf.add_n(l_cross_pos, 'cross_entropy_pos')
