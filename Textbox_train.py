@@ -34,7 +34,7 @@ tf.app.flags.DEFINE_string(
 	'gpu_data', '/gpu:3',
 	'Which gpu to use')
 tf.app.flags.DEFINE_string(
-	'gpu_train', '/gpu:5',
+	'gpu_train', '/gpu:4',
 	'Which gpu to use')
 tf.app.flags.DEFINE_integer(
 	'num_readers', 4,
@@ -47,7 +47,7 @@ tf.app.flags.DEFINE_integer(
 	'log_every_n_steps', 10,
 	'The frequency with which logs are print.')
 tf.app.flags.DEFINE_integer(
-	'save_summaries_secs', 600,
+	'save_summaries_secs', 60,
 	'The frequency with which summaries are saved, in seconds.')
 tf.app.flags.DEFINE_integer(
 	'save_interval_secs', 600,
@@ -59,7 +59,7 @@ tf.app.flags.DEFINE_float(
 # Optimization Flags.
 # =========================================================================== #
 tf.app.flags.DEFINE_float(
-	'weight_decay', 0.0005, 'The weight decay on the model weights.')
+	'weight_decay', 0.00004, 'The weight decay on the model weights.')
 tf.app.flags.DEFINE_string(
 	'optimizer', 'rmsprop',
 	'The name of the optimizer, one of "adadelta", "adagrad", "adam",'
@@ -102,14 +102,14 @@ tf.app.flags.DEFINE_string(
 	' or "polynomial"')
 tf.app.flags.DEFINE_float('learning_rate', 0.001, 'Initial learning rate.')
 tf.app.flags.DEFINE_float(
-	'end_learning_rate', 0.0001,
+	'end_learning_rate', 0.00005,
 	'The minimal end learning rate used by a polynomial decay learning rate.')
 tf.app.flags.DEFINE_float(
 	'label_smoothing', 0.0, 'The amount of label smoothing.')
 tf.app.flags.DEFINE_float(
-	'learning_rate_decay_factor', 0.1, 'Learning rate decay factor.')
+	'learning_rate_decay_factor', 0.94, 'Learning rate decay factor.')
 tf.app.flags.DEFINE_float(
-	'num_epochs_per_decay', 40000,
+	'num_epochs_per_decay', 10,
 	'Number of epochs after which learning rate decays.')
 tf.app.flags.DEFINE_float(
 	'moving_average_decay', None,
@@ -223,9 +223,7 @@ def main(_):
 			summaries.add(tf.summary.scalar('learning_rate', FLAGS.learning_rate))
 
 			## Training 
-			variables_to_train = tf.trainable_variables()
 
-		
 			train_op = slim.learning.create_train_op(total_loss, optimizer)
 
 		# =================================================================== #
@@ -254,7 +252,7 @@ def main(_):
 			sync_optimizer=None)
 
 		'''
-		# for test
+		# for test0
 		with tf.Session() as sess: 
 			sess.run(tf.global_variables_initializer())
 			with slim.queues.QueueRunners(sess):
