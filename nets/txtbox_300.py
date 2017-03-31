@@ -240,10 +240,10 @@ def text_multibox_layer(layer,
 	# Class prediction.
 	scores_pred = 2 * num_anchors * num_classes
 	if(layer == 'global'):
-		sco_pred = slim.conv2d(net, scores_pred, [1, 1], activation_fn=tf.nn.relu, padding = 'VALID',
+		sco_pred = slim.conv2d(net, scores_pred, [1, 1], activation_fn=tf.nn.sigmoid, padding = 'VALID',
 						   scope='conv_cls')
 	else:
-		sco_pred = slim.conv2d(net, scores_pred, [1, 5], activation_fn=tf.nn.relu, padding = 'SAME',
+		sco_pred = slim.conv2d(net, scores_pred, [1, 5], activation_fn=tf.nn.sigmoid, padding = 'SAME',
 						   scope='conv_cls')
 	#cls_pred = custom_layers.channel_to_last(cls_pred)
 	sco_pred = tf.reshape(sco_pred, sco_pred.get_shape().as_list()[:-1] + [2,num_anchors,num_classes])
@@ -320,14 +320,14 @@ def text_losses(logits, localisations,
 				
 				# Add cross-entropy loss.
 				with tf.name_scope('cross_entropy_pos'):
-					#loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits[i],labels=ipmask)
-					loss = tf.square(fpmask * (logits[i][:,:,:,:,:,1] - fpmask))
+					loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits[i],labels=ipmask)
+					#loss = tf.square(fpmask * (logits[i][:,:,:,:,:,1] - fpmask))
 					loss = alpha*tf.reduce_sum(loss) / n
 					l_cross_pos.append(loss)
 
 				with tf.name_scope('cross_entropy_neg'):
 					#loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits[i],labels=inmask)
-					loss = tf.square(fnmask * (logits[i][:,:,:,:,:,0] - fnmask))
+					#loss = tf.square(fnmask * (logits[i][:,:,:,:,:,0] - fnmask))
 					loss = alpha*tf.reduce_sum(loss) / n
 					l_cross_neg.append(loss)
 
