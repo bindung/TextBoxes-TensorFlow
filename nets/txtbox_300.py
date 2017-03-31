@@ -313,21 +313,21 @@ def text_losses(logits, localisations,
 				fpmask = tf.cast(pmask, dtype)
 				nmask = gscores[i] < match_threshold
 				inmask = tf.cast(nmask, tf.int32)
-				fnmask = tf.cast(pmask, dtype)
+				fnmask = tf.cast(nmask, dtype)
 				num = tf.ones_like(gscores[i])
 				n = tf.reduce_sum(num) + 1e-5
 
 				
 				# Add cross-entropy loss.
 				with tf.name_scope('cross_entropy_pos'):
-					loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits[i],
-																		  labels=ipmask)
+					#loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits[i],labels=ipmask)
+					loss = tf.square(fpmask * (gscores[:,:,:,:,:,1] - ipmask))
 					loss = alpha*tf.reduce_sum(loss) / n
 					l_cross_pos.append(loss)
 
 				with tf.name_scope('cross_entropy_neg'):
-					loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits[i],
-																		  labels=inmask)
+					#loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits[i],labels=inmask)
+					loss = tf.square(fnmask * (gscores[:,:,:,:,:,0] - inmask))
 					loss = alpha*tf.reduce_sum(loss) / n
 					l_cross_neg.append(loss)
 
@@ -338,39 +338,7 @@ def text_losses(logits, localisations,
 					loss = custom_layers.abs_smooth(localisations[i] - glocalisations[i])
 					loss = tf.reduce_sum(loss) / n
 					l_loc.append(loss)
-				'''
-				# Determine weights Tensor.
 
-				pmask = gscores[i] > match_threshold
-				ipmask = tf.cast(pmask, tf.int32)
-				fpmask = tf.cast(pmask, dtype)
-				nmask = gscores[i] < match_threshold
-				inmask = tf.cast(nmask, tf.int32)
-				fnmask = tf.cast(pmask, dtype)
-				num = tf.ones_like(gscores[i])
-				n = tf.reduce_sum(num) + 1e-5
-
-				# Add cross-entropy loss.
-				with tf.name_scope('cross_entropy_pos'):
-					loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits[i],
-																		  labels=ipmask)
-					loss = tf.losses.compute_weighted_loss(loss, fpmask)
-					l_cross_pos.append(loss)
-
-				with tf.name_scope('cross_entropy_neg'):
-					loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits[i],
-																		  labels=inmask)
-					loss = tf.losses.compute_weighted_loss(loss, fnmask)
-					l_cross_neg.append(loss)
-
-				# Add localization loss: smooth L1, L2, ...
-				with tf.name_scope('localization'):
-					# Weights Tensor: positive mask + random negative.
-					weights = tf.expand_dims(alpha * fpmask, axis=-1)
-					loss = custom_layers.abs_smooth(localisations[i] - glocalisations[i])
-					loss = tf.losses.compute_weighted_loss(loss, weights)
-					l_loc.append(loss)
-				'''
 		# Additional total losses...
 		with tf.name_scope('total'):
 			total_cross_pos = tf.add_n(l_cross_pos, 'cross_entropy_pos')
