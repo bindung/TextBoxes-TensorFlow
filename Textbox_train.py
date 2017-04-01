@@ -166,15 +166,16 @@ def main(_):
 
 	with tf.Graph().as_default():
 		
+		# initalize the net
+		net = txtbox_300.TextboxNet()
+		out_shape = net.params.img_shape
+		anchors = net.anchors(out_shape)
+
 		# Create global_step.
         with tf.device(FLAGS.gpu_train):
         	global_step = slim.create_global_step()
 		# create batch dataset
 		with tf.device(FLAGS.gpu_data):
-			# initalize the net
-			net = txtbox_300.TextboxNet()
-			out_shape = net.params.img_shape
-			anchors = net.anchors(out_shape)
 
 			b_image, b_glocalisations, b_gscores = \
 			load_batch.get_batch(FLAGS.dataset_dir,
