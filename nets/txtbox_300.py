@@ -303,7 +303,7 @@ def text_losses(logits, localisations,
 		l_cross_pos = []
 		l_cross_neg = []
 		l_loc = []
-		n_poses = 0.0
+		n_poses = 0
 		for i in range(len(logits)):
 			dtype = logits[i].dtype
 			with tf.name_scope('block_%i' % i):
