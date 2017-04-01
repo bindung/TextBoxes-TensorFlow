@@ -284,7 +284,7 @@ def ssd_arg_scope(weight_decay=0.0005, data_format='NHWC'):
 # =========================================================================== #
 def text_losses(logits, localisations,
 			   glocalisations, gscores,
-			   match_threshold=0.1,
+			   match_threshold=0.5,
 			   negative_ratio=3.,
 			   alpha=1.,
 			   label_smoothing=0.,

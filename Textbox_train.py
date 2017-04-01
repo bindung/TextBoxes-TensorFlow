@@ -22,7 +22,7 @@ tf.app.flags.DEFINE_float(
 tf.app.flags.DEFINE_float(
 	'negative_ratio', 3., 'Negative ratio in the loss function.')
 tf.app.flags.DEFINE_float(
-	'match_threshold', 0.1, 'Matching threshold in the loss function.')
+	'match_threshold', 0.5, 'Matching threshold in the loss function.')
 
 # =========================================================================== #
 # General Flags.
@@ -166,16 +166,15 @@ def main(_):
 
 	with tf.Graph().as_default():
 		
-		# initalize the net
-		net = txtbox_300.TextboxNet()
-		out_shape = net.params.img_shape
-		anchors = net.anchors(out_shape)
-
 		# Create global_step.
         with tf.device(FLAGS.gpu_train):
         	global_step = slim.create_global_step()
 		# create batch dataset
 		with tf.device(FLAGS.gpu_data):
+			# initalize the net
+			net = txtbox_300.TextboxNet()
+			out_shape = net.params.img_shape
+			anchors = net.anchors(out_shape)
 
 			b_image, b_glocalisations, b_gscores = \
 			load_batch.get_batch(FLAGS.dataset_dir,
@@ -187,7 +186,7 @@ def main(_):
 			  					 FLAGS.num_preprocessing_threads,
 			  					 is_training = True)
 		
-		with tf.device(FLAGS.gpu_data):
+		with tf.device(FLAGS.gpu_train):
 
 			arg_scope = net.arg_scope(weight_decay=FLAGS.weight_decay)
 
@@ -225,7 +224,7 @@ def main(_):
 			learning_rate = tf_utils.configure_learning_rate(FLAGS,
                                                              FLAGS.num_samples,
                                                              global_step)
-			# Configure the optimization procedure
+			# Configure the optimization procedure 
 			optimizer = tf_utils.configure_optimizer(FLAGS, learning_rate)
 			summaries.add(tf.summary.scalar('learning_rate', learning_rate))
 
