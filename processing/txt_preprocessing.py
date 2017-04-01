@@ -114,12 +114,11 @@ def preprocess_for_train(image, labels, bboxes,
         if image.get_shape().ndims != 3:
             raise ValueError('Input must be of size [height, width, C>0]')
 
-        '''
+        
         # Convert to float scaled [0, 1].
         if image.dtype != tf.float32:
             image = tf.image.convert_image_dtype(image, dtype=tf.float32)
     
-        '''
         # Distort image and bounding boxes.
         bboxes = tf.minimum(bboxes, 1.0)
         dst_image, labels, bboxes, distort_bbox ,num= \
@@ -137,9 +136,9 @@ def preprocess_for_train(image, labels, bboxes,
 
         dst_image.set_shape([out_shape[0], out_shape[1], 3])
         # Rescale to normal range
-        #image = dst_image * 255.
+        image = dst_image * 255.
         #dst_image = tf.cast(dst_image,tf.float32)
-        return dst_image, labels, bboxes,num
+        return image, labels, bboxes,num
 
 
 def preprocess_for_eval(image, labels, bboxes,

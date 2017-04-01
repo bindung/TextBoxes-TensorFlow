@@ -303,6 +303,7 @@ def text_losses(logits, localisations,
 		l_cross_pos = []
 		l_cross_neg = []
 		l_loc = []
+		n_poses = 0.0
 		for i in range(len(logits)):
 			dtype = logits[i].dtype
 			with tf.name_scope('block_%i' % i):
@@ -317,6 +318,7 @@ def text_losses(logits, localisations,
 				fnmask = tf.cast(nmask, dtype)
 				num = tf.ones_like(gscores[i])
 				n = tf.reduce_sum(num) + 1e-5
+				n_poses += n_pos
 
 				
 				# Add cross-entropy loss.
@@ -348,7 +350,7 @@ def text_losses(logits, localisations,
 			total_loc = tf.add_n(l_loc, 'localization')
 
 			# Add to EXTRA LOSSES TF.collection
-			tf.add_to_collection('EXTRA_LOSSES', n_pos)
+			tf.add_to_collection('EXTRA_LOSSES', n_poses)
 			tf.add_to_collection('EXTRA_LOSSES', total_cross_pos)
 			tf.add_to_collection('EXTRA_LOSSES', total_cross_neg)
 			tf.add_to_collection('EXTRA_LOSSES', total_cross)
