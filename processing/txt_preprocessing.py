@@ -119,16 +119,18 @@ def preprocess_for_train(image, labels, bboxes,
         if image.dtype != tf.float32:
             image = tf.image.convert_image_dtype(image, dtype=tf.float32)
     
+        '''
         # Distort image and bounding boxes.
         bboxes = tf.minimum(bboxes, 1.0)
         bboxes = tf.maximum(bboxes, 0.0)
-        dst_image, labels, bboxes, distort_bbox ,num= \
+        image, labels, bboxes, distort_bbox ,num= \
             distorted_bounding_box_crop(image, labels, bboxes,
                                         aspect_ratio_range=CROP_RATIO_RANGE)
         tf.add_to_collection('EXTRA_LOSSES', num)
+        '''
         # Resize image to output size.
         dst_image ,bboxes = \
-        tf_image.resize_image_bboxes_with_crop_or_pad(dst_image, bboxes,
+        tf_image.resize_image_bboxes_with_crop_or_pad(image, bboxes,
                                                     out_shape[0],out_shape[1])
 
         # Randomly flip the image horizontally.
