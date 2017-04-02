@@ -201,24 +201,24 @@ def main(_):
 							   alpha=FLAGS.loss_alpha,
 							   label_smoothing=FLAGS.label_smoothing)
 
-			# Gather summaries.
+		# Gather summaries.
 
-			for end_point in end_points:
-				x = end_points[end_point]
-				tf.summary.histogram('activations/' + end_point, x)
-				tf.summary.scalar('sparsity/' + end_point,
-												tf.nn.zero_fraction(x))
+		for end_point in end_points:
+			x = end_points[end_point]
+			tf.summary.histogram('activations/' + end_point, x)
+			tf.summary.scalar('sparsity/' + end_point,
+											tf.nn.zero_fraction(x))
 
-			for loss in tf.get_collection(tf.GraphKeys.LOSSES):
-				tf.summary.scalar(loss.op.name, loss)
+		for loss in tf.get_collection(tf.GraphKeys.LOSSES):
+			tf.summary.scalar(loss.op.name, loss)
 
-			for loss in tf.get_collection('EXTRA_LOSSES'):
-				tf.summary.scalar(loss.op.name, loss)
+		for loss in tf.get_collection('EXTRA_LOSSES'):
+			tf.summary.scalar(loss.op.name, loss)
 
-			for variable in slim.get_model_variables():
-				tf.summary.histogram(variable.op.name, variable)
+		for variable in slim.get_model_variables():
+			tf.summary.histogram(variable.op.name, variable)
 
-
+		with tf.device(FLAGS.gpu_data):
 			learning_rate = tf_utils.configure_learning_rate(FLAGS,
 															 FLAGS.num_samples,
 															 global_step)
@@ -230,7 +230,7 @@ def main(_):
 
 			train_op = slim.learning.create_train_op(total_loss, optimizer)
 
-			merged = tf.summary.merge_all()
+		merged = tf.summary.merge_all()
 
 		gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=FLAGS.gpu_memory_fraction)
 		config = tf.ConfigProto(gpu_options=gpu_options,
@@ -255,6 +255,7 @@ def main(_):
 			path = tf.train.latest_checkpoint(FLAGS.train_dir)
 			if path:
 				saver.restore(sess, path)
+				print sess.run([global_step])
 			with slim.queues.QueueRunners(sess):
 				for i in xrange(FLAGS.max_number_of_steps):
 					loss, _ , summary_, global_step_= \
@@ -262,7 +263,7 @@ def main(_):
 					current_step = tf.train.global_step(sess, global_step)
 					if i % 10 ==0:
 						print loss
-					if global_step_ % 10 == 0:
+					if global_step_ % 2 == 0:
 						train_writer.add_summary(summary_, global_step_)
 					if global_step_ % 100 == 0:
 						path = saver.save(sess, checkpoint_prefix, global_step=current_step)
