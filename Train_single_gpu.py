@@ -30,10 +30,10 @@ tf.app.flags.DEFINE_string(
 	'train_dir', '/tmp/tfmodel/',
 	'Directory where checkpoints and event logs are written to.')
 tf.app.flags.DEFINE_string(
-	'gpu_data', '/gpu:3',
+	'gpu_data', '/gpu:0',
 	'Which gpu to use')
 tf.app.flags.DEFINE_string(
-	'gpu_train', '/gpu:4',
+	'gpu_train', '/gpu:0',
 	'Which gpu to use')
 tf.app.flags.DEFINE_integer(
 	'num_readers', 4,
@@ -52,7 +52,7 @@ tf.app.flags.DEFINE_integer(
 	'save_interval_secs', 600,
 	'The frequency with which the model is saved, in seconds.')
 tf.app.flags.DEFINE_float(
-	'gpu_memory_fraction', 0.75, 'GPU memory fraction to use.')
+	'gpu_memory_fraction', 0.3, 'GPU memory fraction to use.')
 
 # =========================================================================== #
 # Optimization Flags.
@@ -232,8 +232,9 @@ def main(_):
 
 			merged = tf.summary.merge_all()
 
-		#gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=FLAGS.gpu_memory_fraction)
-		config = tf.ConfigProto(log_device_placement=False,
+		gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=FLAGS.gpu_memory_fraction)
+		config = tf.ConfigProto(gpu_options=gpu_options,
+								log_device_placement=False,
 								allow_soft_placement = True)
 
 		# Checkpoint directory. Tensorflow assumes this directory already exists so we need to create it
