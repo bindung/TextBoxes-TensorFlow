@@ -281,7 +281,7 @@ def ssd_arg_scope(weight_decay=0.0005, data_format='NHWC'):
 	with slim.arg_scope([slim.conv2d, slim.fully_connected],
 						activation_fn=tf.nn.relu,
 						weights_regularizer=slim.l2_regularizer(weight_decay),
-						weights_initializer=tf.contrib.layers.variance_scaling_initializer(),  #tf.contrib.layers.xavier_initializer(),
+						weights_initializer=tf.contrib.layers.xavier_initializer(),
 						biases_initializer=tf.zeros_initializer()):
 		with slim.arg_scope([slim.conv2d, slim.max_pool2d],
 							padding='SAME',
