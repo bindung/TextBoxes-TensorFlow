@@ -121,6 +121,7 @@ def preprocess_for_train(image, labels, bboxes,
     
         # Distort image and bounding boxes.
         bboxes = tf.minimum(bboxes, 1.0)
+        bboxes = tf.maximum(bboxes, 0.0)
         dst_image, labels, bboxes, distort_bbox ,num= \
             distorted_bounding_box_crop(image, labels, bboxes,
                                         aspect_ratio_range=CROP_RATIO_RANGE)
