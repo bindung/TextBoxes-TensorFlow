@@ -119,10 +119,11 @@ def preprocess_for_train(image, labels, bboxes,
         if image.dtype != tf.float32:
             image = tf.image.convert_image_dtype(image, dtype=tf.float32)
         num = tf.reduce_sum(tf.cast(labels, tf.int32))
-        '''
-        # Distort image and bounding boxes.
         bboxes = tf.minimum(bboxes, 1.0)
         bboxes = tf.maximum(bboxes, 0.0)
+        '''
+        # Distort image and bounding boxes.
+
         image, labels, bboxes, distort_bbox ,num= \
             distorted_bounding_box_crop(image, labels, bboxes,
                                         aspect_ratio_range=CROP_RATIO_RANGE)
