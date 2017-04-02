@@ -48,7 +48,7 @@ EVAL_SIZE = (300, 300)
 def distorted_bounding_box_crop(image,
                                 labels,
                                 bboxes,
-                                min_object_covered=0.05,
+                                min_object_covered=0.2,
                                 aspect_ratio_range=(0.9, 1.1),
                                 area_range=(0.1, 1.0),
                                 max_attempts=200,
@@ -121,21 +121,20 @@ def preprocess_for_train(image, labels, bboxes,
         num = tf.reduce_sum(tf.cast(labels, tf.int32))
         bboxes = tf.minimum(bboxes, 1.0)
         bboxes = tf.maximum(bboxes, 0.0)
-        '''
+    
         # Distort image and bounding boxes.
 
         image, labels, bboxes, distort_bbox ,num= \
             distorted_bounding_box_crop(image, labels, bboxes,
                                         aspect_ratio_range=CROP_RATIO_RANGE)
         tf.add_to_collection('EXTRA_LOSSES', num)
-        '''
         # Resize image to output size.
         dst_image ,bboxes = \
         tf_image.resize_image_bboxes_with_crop_or_pad(image, bboxes,
                                                     out_shape[0],out_shape[1])
 
         # Randomly flip the image horizontally.
-        dst_image, bboxes = tf_image.random_flip_left_right(dst_image, bboxes)
+        #dst_image, bboxes = tf_image.random_flip_left_right(dst_image, bboxes)
 
         tf_image.tf_summary_image(dst_image, bboxes, 'image_color_distorted')
 
