@@ -118,7 +118,7 @@ def preprocess_for_train(image, labels, bboxes,
         # Convert to float scaled [0, 1].
         if image.dtype != tf.float32:
             image = tf.image.convert_image_dtype(image, dtype=tf.float32)
-    
+        num = tf.reduce_sum(tf.cast(labels, tf.int32))
         '''
         # Distort image and bounding boxes.
         bboxes = tf.minimum(bboxes, 1.0)
