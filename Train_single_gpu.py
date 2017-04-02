@@ -1,5 +1,4 @@
 
-
 """
 Train scripts
 
@@ -172,20 +171,20 @@ def main(_):
 		anchors = net.anchors(out_shape)
 
 		# Create global_step.
-        with tf.device(FLAGS.gpu_train):
-        	global_step = slim.create_global_step()
+		with tf.device(FLAGS.gpu_train):
+			global_step = slim.create_global_step()
 		# create batch dataset
 		with tf.device(FLAGS.gpu_data):
 
 			b_image, b_glocalisations, b_gscores = \
 			load_batch.get_batch(FLAGS.dataset_dir,
-			  					 FLAGS.num_readers,
-			  					 FLAGS.batch_size,
-			  					 out_shape,
-			  					 net,
-			  					 anchors,
-			  					 FLAGS.num_preprocessing_threads,
-			  					 is_training = True)
+								 FLAGS.num_readers,
+								 FLAGS.batch_size,
+								 out_shape,
+								 net,
+								 anchors,
+								 FLAGS.num_preprocessing_threads,
+								 is_training = True)
 		
 		with tf.device(FLAGS.gpu_train):
 
@@ -204,69 +203,74 @@ def main(_):
 							   label_smoothing=FLAGS.label_smoothing)
 
 		# Gather summaries.
-		summaries = set(tf.get_collection(tf.GraphKeys.SUMMARIES))
 
 		for end_point in end_points:
 			x = end_points[end_point]
-			summaries.add(tf.summary.histogram('activations/' + end_point, x))
-			summaries.add(tf.summary.scalar('sparsity/' + end_point,
-											tf.nn.zero_fraction(x)))
+			tf.summary.histogram('activations/' + end_point, x)
+			tf.summary.scalar('sparsity/' + end_point,
+											tf.nn.zero_fraction(x))
 
 		for loss in tf.get_collection(tf.GraphKeys.LOSSES):
-			summaries.add(tf.summary.scalar(loss.op.name, loss))
+			tf.summary.scalar(loss.op.name, loss)
 
 		for loss in tf.get_collection('EXTRA_LOSSES'):
-			summaries.add(tf.summary.scalar(loss.op.name, loss))
+			tf.summary.scalar(loss.op.name, loss)
 
 		for variable in slim.get_model_variables():
-			summaries.add(tf.summary.histogram(variable.op.name, variable))
+			tf.summary.histogram(variable.op.name, variable)
 
 		with tf.device(FLAGS.gpu_train):
 			learning_rate = tf_utils.configure_learning_rate(FLAGS,
-                                                             FLAGS.num_samples,
-                                                             global_step)
+															 FLAGS.num_samples,
+															 global_step)
 			# Configure the optimization procedure 
 			optimizer = tf_utils.configure_optimizer(FLAGS, learning_rate)
-			summaries.add(tf.summary.scalar('learning_rate', learning_rate))
+			tf.summary.scalar('learning_rate', learning_rate)
 
 			## Training 
 
 			train_op = slim.learning.create_train_op(total_loss, optimizer)
 
+		merged = tf.summary.merge_all()
 		# =================================================================== #
 		# Kicks off the training.
 		# =================================================================== #
 		#gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=FLAGS.gpu_memory_fraction)
 		config = tf.ConfigProto(log_device_placement=False,
 								allow_soft_placement = True)
-		saver = tf.train.Saver(max_to_keep=5,
-							   keep_checkpoint_every_n_hours=1.0,
-							   write_version=2,
-							   pad_step_number=False)
-		slim.learning.train(
-			train_op,
-			logdir=FLAGS.train_dir,
-			master='',
-			is_chief=True,
-			init_fn=tf_utils.get_init_fn(FLAGS),
-			number_of_steps=FLAGS.max_number_of_steps,
-			log_every_n_steps=FLAGS.log_every_n_steps,
-			save_summaries_secs=FLAGS.save_summaries_secs,
-			saver=saver,
-			save_interval_secs=FLAGS.save_interval_secs,
-			session_config=config,
-			sync_optimizer=None)
 
-		'''
-		# for test0
-		with tf.Session() as sess: 
+		# Checkpoint directory. Tensorflow assumes this directory already exists so we need to create it
+		checkpoint_dir = FLAGS.train_dir
+		checkpoint_prefix = os.path.join(checkpoint_dir, "model.ckpt")
+		if not os.path.exists(checkpoint_dir):
+			os.makedirs(checkpoint_dir)
+
+
+
+		with tf.Session(config=config) as sess: 
 			sess.run(tf.global_variables_initializer())
+			train_writer = tf.summary.FileWriter(FLAGS.train_dir,
+									  sess.graph)
+			saver = tf.train.Saver(max_to_keep=1,
+					   keep_checkpoint_every_n_hours=1.0,
+					   pad_step_number=False)
+			path = tf.train.latest_checkpoint(FLAGS.train_dir)
+			if path:
+				saver.restore(sess, path)
 			with slim.queues.QueueRunners(sess):
-				imgs = sess.run(b_image)
-				loss_ = sess.run(total_loss)
-				print loss_
+				for i in xrange(FLAGS.max_number_of_steps):
+					loss, _ , summary_, global_step_= \
+					sess.run([total_loss,train_op,merged,global_step])
+					current_step = tf.train.global_step(sess, global_step)
+					if i % 10 ==0:
+						print loss
+					if global_step_ % 10 == 0:
+						train_writer.add_summary(summary_, global_step_)
+					if global_step_ % 100 == 0:
+						path = saver.save(sess, checkpoint_prefix, global_step=current_step)
+						print("Saved model checkpoint to {}\n".format(path))
 
-		'''
+
 if __name__ == '__main__':
 	tf.app.run()
 
