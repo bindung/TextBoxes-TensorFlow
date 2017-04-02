@@ -64,10 +64,10 @@ def _processing_image(wordbb, imname,coder):
 	bbox = []
 	[xmin, ymin]= np.min(wordbb,1)
 	[xmax, ymax] = np.max(wordbb,1)
-	xmin = np.minimum(xmin/shape[1], 0)
-	ymin = np.minimum(ymin/shape[0], 0)
-	xmax = np.maximum(xmax/shape[1], 1)
-	ymax = np.maximum(ymax/shape[0], 1)
+	xmin = np.maximum(xmin/shape[1], 0.0)
+	ymin = np.maximum(ymin/shape[0], 0.0)
+	xmax = np.minimum(xmax/shape[1], 1.0)
+	ymax = np.minimum(ymax/shape[0], 1.0)
 	if numofbox > 1:
 		bbox = [[ymin[i],xmin[i],ymax[i],xmax[i]] for i in range(numofbox)] 
 	if numofbox == 1:

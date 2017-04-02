@@ -347,7 +347,6 @@ def tf_summary_image(image, bboxes, name='image', unwhitened=False):
         image = tf_image_unwhitened(image)
     image = tf.expand_dims(image, 0)
     bboxes = tf.expand_dims(bboxes, 0)
-    bboxes = tf.minimum(bboxes, 1.0)
     image_with_box = tf.image.draw_bounding_boxes(image, bboxes)
     tf.summary.image(name, image_with_box)
 
