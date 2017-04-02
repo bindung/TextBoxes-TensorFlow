@@ -165,16 +165,16 @@ def main(_):
 
 	with tf.Graph().as_default():
 		
-		# initalize the net
-		net = txtbox_300.TextboxNet()
-		out_shape = net.params.img_shape
-		anchors = net.anchors(out_shape)
-
-		# Create global_step.
-		with tf.device(FLAGS.gpu_train):
-			global_step = slim.create_global_step()
-		# create batch dataset
 		with tf.device(FLAGS.gpu_data):
+			# initalize the net
+			net = txtbox_300.TextboxNet()
+			out_shape = net.params.img_shape
+			anchors = net.anchors(out_shape)
+
+			# Create global_step.
+			global_step = slim.create_global_step()
+			# create batch dataset
+		
 
 			b_image, b_glocalisations, b_gscores = \
 			load_batch.get_batch(FLAGS.dataset_dir,
@@ -186,7 +186,6 @@ def main(_):
 								 FLAGS.num_preprocessing_threads,
 								 is_training = True)
 		
-		with tf.device(FLAGS.gpu_train):
 
 			arg_scope = net.arg_scope(weight_decay=FLAGS.weight_decay)
 
@@ -202,24 +201,24 @@ def main(_):
 							   alpha=FLAGS.loss_alpha,
 							   label_smoothing=FLAGS.label_smoothing)
 
-		# Gather summaries.
+			# Gather summaries.
 
-		for end_point in end_points:
-			x = end_points[end_point]
-			tf.summary.histogram('activations/' + end_point, x)
-			tf.summary.scalar('sparsity/' + end_point,
-											tf.nn.zero_fraction(x))
+			for end_point in end_points:
+				x = end_points[end_point]
+				tf.summary.histogram('activations/' + end_point, x)
+				tf.summary.scalar('sparsity/' + end_point,
+												tf.nn.zero_fraction(x))
 
-		for loss in tf.get_collection(tf.GraphKeys.LOSSES):
-			tf.summary.scalar(loss.op.name, loss)
+			for loss in tf.get_collection(tf.GraphKeys.LOSSES):
+				tf.summary.scalar(loss.op.name, loss)
 
-		for loss in tf.get_collection('EXTRA_LOSSES'):
-			tf.summary.scalar(loss.op.name, loss)
+			for loss in tf.get_collection('EXTRA_LOSSES'):
+				tf.summary.scalar(loss.op.name, loss)
 
-		for variable in slim.get_model_variables():
-			tf.summary.histogram(variable.op.name, variable)
+			for variable in slim.get_model_variables():
+				tf.summary.histogram(variable.op.name, variable)
 
-		with tf.device(FLAGS.gpu_train):
+
 			learning_rate = tf_utils.configure_learning_rate(FLAGS,
 															 FLAGS.num_samples,
 															 global_step)
@@ -231,10 +230,8 @@ def main(_):
 
 			train_op = slim.learning.create_train_op(total_loss, optimizer)
 
-		merged = tf.summary.merge_all()
-		# =================================================================== #
-		# Kicks off the training.
-		# =================================================================== #
+			merged = tf.summary.merge_all()
+
 		#gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=FLAGS.gpu_memory_fraction)
 		config = tf.ConfigProto(log_device_placement=False,
 								allow_soft_placement = True)
