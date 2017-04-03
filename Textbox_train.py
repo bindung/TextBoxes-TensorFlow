@@ -176,33 +176,33 @@ def main(_):
         with tf.device(FLAGS.gpu_train):
         	global_step = slim.create_global_step()
 		# create batch dataset
-		with tf.device('/cpu:0'):
 
-			b_image, b_glocalisations, b_gscores = \
-			load_batch.get_batch(FLAGS.dataset_dir,
-			  					 FLAGS.num_readers,
-			  					 FLAGS.batch_size,
-			  					 out_shape,
-			  					 net,
-			  					 anchors,
-			  					 FLAGS.num_preprocessing_threads,
-			  					 is_training = True)
+
+		b_image, b_glocalisations, b_gscores = \
+		load_batch.get_batch(FLAGS.dataset_dir,
+		  					 FLAGS.num_readers,
+		  					 FLAGS.batch_size,
+		  					 out_shape,
+		  					 net,
+		  					 anchors,
+		  					 FLAGS.num_preprocessing_threads,
+		  					 is_training = True)
 		
-		with tf.device('/cpu:0'):
+		#with tf.device(FLAGS.gpu_train):
 
-			arg_scope = net.arg_scope(weight_decay=FLAGS.weight_decay)
+		arg_scope = net.arg_scope(weight_decay=FLAGS.weight_decay)
 
-			with slim.arg_scope(arg_scope):
-				localisations, logits, end_points = \
-						net.net(b_image, is_training=True)
+		with slim.arg_scope(arg_scope):
+			localisations, logits, end_points = \
+					net.net(b_image, is_training=True)
 
-			# Add loss function.
-			total_loss = net.losses(logits, localisations,
-							   b_glocalisations, b_gscores,
-							   match_threshold=FLAGS.match_threshold,
-							   negative_ratio=FLAGS.negative_ratio,
-							   alpha=FLAGS.loss_alpha,
-							   label_smoothing=FLAGS.label_smoothing)
+		# Add loss function.
+		total_loss = net.losses(logits, localisations,
+						   b_glocalisations, b_gscores,
+						   match_threshold=FLAGS.match_threshold,
+						   negative_ratio=FLAGS.negative_ratio,
+						   alpha=FLAGS.loss_alpha,
+						   label_smoothing=FLAGS.label_smoothing)
 
 		# Gather summaries.
 		summaries = set(tf.get_collection(tf.GraphKeys.SUMMARIES))
