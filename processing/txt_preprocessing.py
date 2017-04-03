@@ -119,8 +119,8 @@ def preprocess_for_train(image, labels, bboxes,
         if image.dtype != tf.float32:
             image = tf.image.convert_image_dtype(image, dtype=tf.float32)
         num = tf.reduce_sum(tf.cast(labels, tf.int32))
-        bboxes = tf.minimum(bboxes, 1.0)
-        bboxes = tf.maximum(bboxes, 0.0)
+        bboxes = tf.minimum(bboxes, 0.9999)
+        bboxes = tf.maximum(bboxes, 0.0001)
     
         # Distort image and bounding boxes.
 
@@ -136,10 +136,9 @@ def preprocess_for_train(image, labels, bboxes,
 
         # Randomly flip the image horizontally.
         #dst_image, bboxes = tf_image.random_flip_left_right(dst_image, bboxes)
-        bboxes = tf.minimum(bboxes, 0.9999)
-        bboxes = tf.maximum(bboxes, 0.0001)
-        tf_image.tf_summary_image(dst_image, bboxes, 'image_color_distorted')
 
+        bbox_image = tf.image.draw_bounding_boxes(tf.expand_dims(dst_image,0), tf.expand_dims(bboxes,0))
+        tf.summary.image('image_with_box', bbox_image)
         dst_image.set_shape([out_shape[0], out_shape[1], 3])
         # Rescale to normal range
         image = dst_image * 255.
