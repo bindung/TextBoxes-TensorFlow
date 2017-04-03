@@ -129,15 +129,19 @@ def preprocess_for_train(image, labels, bboxes,
                                         aspect_ratio_range=CROP_RATIO_RANGE)
         tf.add_to_collection('EXTRA_LOSSES', num)
         # Resize image to output size.
+        bboxes = tf.minimum(bboxes, 1.0)
+        bboxes = tf.maximum(bboxes, 0.0)
         dst_image ,bboxes = \
         tf_image.resize_image_bboxes_with_crop_or_pad(image, bboxes,
                                                     out_shape[0],out_shape[1])
 
         # Randomly flip the image horizontally.
         #dst_image, bboxes = tf_image.random_flip_left_right(dst_image, bboxes)
-
-        tf_image.tf_summary_image(dst_image, bboxes, 'image_color_distorted')
-
+        bbox_image = tf.image.draw_bounding_boxes(tf.expand_dims(dst_image,0), tf.expand_dims(bboxes,0))
+        #tf_image.tf_summary_image(dst_image, bboxes, 'image_color_distorted')
+        bboxes = tf.minimum(bboxes, 1.0)
+        bboxes = tf.maximum(bboxes, 0.0)
+        tf.summary.image('image_with_box', bbox_image)
         dst_image.set_shape([out_shape[0], out_shape[1], 3])
         # Rescale to normal range
         image = dst_image * 255.

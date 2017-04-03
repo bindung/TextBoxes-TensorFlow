@@ -52,7 +52,7 @@ tf.app.flags.DEFINE_integer(
 	'save_interval_secs', 600,
 	'The frequency with which the model is saved, in seconds.')
 tf.app.flags.DEFINE_float(
-	'gpu_memory_fraction', 0.3, 'GPU memory fraction to use.')
+	'gpu_memory_fraction', 0.8, 'GPU memory fraction to use.')
 
 # =========================================================================== #
 # Optimization Flags.
@@ -165,28 +165,28 @@ def main(_):
 
 	with tf.Graph().as_default():
 		
+
+		# initalize the net
+		net = txtbox_300.TextboxNet()
+		out_shape = net.params.img_shape
+		anchors = net.anchors(out_shape)
+
+		# Create global_step.
+		global_step = slim.create_global_step()
+		# create batch dataset
+	
+
+		b_image, b_glocalisations, b_gscores = \
+		load_batch.get_batch(FLAGS.dataset_dir,
+							 FLAGS.num_readers,
+							 FLAGS.batch_size,
+							 out_shape,
+							 net,
+							 anchors,
+							 FLAGS.num_preprocessing_threads,
+							 is_training = True)
+		
 		with tf.device(FLAGS.gpu_data):
-			# initalize the net
-			net = txtbox_300.TextboxNet()
-			out_shape = net.params.img_shape
-			anchors = net.anchors(out_shape)
-
-			# Create global_step.
-			global_step = slim.create_global_step()
-			# create batch dataset
-		
-
-			b_image, b_glocalisations, b_gscores = \
-			load_batch.get_batch(FLAGS.dataset_dir,
-								 FLAGS.num_readers,
-								 FLAGS.batch_size,
-								 out_shape,
-								 net,
-								 anchors,
-								 FLAGS.num_preprocessing_threads,
-								 is_training = True)
-		
-
 			arg_scope = net.arg_scope(weight_decay=FLAGS.weight_decay)
 
 			with slim.arg_scope(arg_scope):
