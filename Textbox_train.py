@@ -176,7 +176,7 @@ def main(_):
         with tf.device(FLAGS.gpu_train):
         	global_step = slim.create_global_step()
 		# create batch dataset
-		with tf.device(FLAGS.gpu_data):
+		with tf.device('/cpu:0'):
 
 			b_image, b_glocalisations, b_gscores = \
 			load_batch.get_batch(FLAGS.dataset_dir,
@@ -188,7 +188,7 @@ def main(_):
 			  					 FLAGS.num_preprocessing_threads,
 			  					 is_training = True)
 		
-		with tf.device(FLAGS.gpu_train):
+		with tf.device('/cpu:0'):
 
 			arg_scope = net.arg_scope(weight_decay=FLAGS.weight_decay)
 
