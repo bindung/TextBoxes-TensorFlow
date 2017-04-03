@@ -40,7 +40,7 @@ _B_MEAN = 104.
 
 # Some training pre-processing parameters.
 BBOX_CROP_OVERLAP = 0.4        # Minimum overlap to keep a bbox after cropping.
-CROP_RATIO_RANGE = (0.8, 1.2)  # Distortion ratio during cropping.
+CROP_RATIO_RANGE = (0.9, 1.1)  # Distortion ratio during cropping.
 EVAL_SIZE = (300, 300)
 
 
@@ -48,7 +48,7 @@ EVAL_SIZE = (300, 300)
 def distorted_bounding_box_crop(image,
                                 labels,
                                 bboxes,
-                                min_object_covered=0.2,
+                                min_object_covered=0.5,
                                 aspect_ratio_range=(0.9, 1.1),
                                 area_range=(0.1, 1.0),
                                 max_attempts=200,
@@ -75,7 +75,7 @@ def distorted_bounding_box_crop(image,
     with tf.name_scope(scope, 'distorted_bounding_box_crop', [image, bboxes]):
         # Each bounding box has shape [1, num_boxes, box coords] and
         # the coordinates are ordered [ymin, xmin, ymax, xmax].
-        bboxes = tf.minimum(bboxes, 1.0)
+
         bbox_begin, bbox_size, distort_bbox = tf.image.sample_distorted_bounding_box(
                 tf.shape(image),
                 bounding_boxes=tf.expand_dims(bboxes, 0),
@@ -128,20 +128,18 @@ def preprocess_for_train(image, labels, bboxes,
             distorted_bounding_box_crop(image, labels, bboxes,
                                         aspect_ratio_range=CROP_RATIO_RANGE)
         tf.add_to_collection('EXTRA_LOSSES', num)
+        
         # Resize image to output size.
-        bboxes = tf.minimum(bboxes, 1.0)
-        bboxes = tf.maximum(bboxes, 0.0)
         dst_image ,bboxes = \
         tf_image.resize_image_bboxes_with_crop_or_pad(image, bboxes,
                                                     out_shape[0],out_shape[1])
 
         # Randomly flip the image horizontally.
         #dst_image, bboxes = tf_image.random_flip_left_right(dst_image, bboxes)
-        bbox_image = tf.image.draw_bounding_boxes(tf.expand_dims(dst_image,0), tf.expand_dims(bboxes,0))
-        #tf_image.tf_summary_image(dst_image, bboxes, 'image_color_distorted')
-        bboxes = tf.minimum(bboxes, 1.0)
-        bboxes = tf.maximum(bboxes, 0.0)
-        tf.summary.image('image_with_box', bbox_image)
+        bboxes = tf.minimum(bboxes, 0.9999)
+        bboxes = tf.maximum(bboxes, 0.0001)
+        tf_image.tf_summary_image(dst_image, bboxes, 'image_color_distorted')
+
         dst_image.set_shape([out_shape[0], out_shape[1], 3])
         # Rescale to normal range
         image = dst_image * 255.
