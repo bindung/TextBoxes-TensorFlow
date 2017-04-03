@@ -177,7 +177,7 @@ def main(_):
         	global_step = slim.create_global_step()
 		# create batch dataset
 
-		with tf.device("/CPU:0"):
+		with tf.device('/cpu:0'):
 			b_image, b_glocalisations, b_gscores = \
 			load_batch.get_batch(FLAGS.dataset_dir,
 			  					 FLAGS.num_readers,
@@ -196,6 +196,7 @@ def main(_):
 				localisations, logits, end_points = \
 						net.net(b_image, is_training=True)
 
+		with tf.device(FLAGS.gpu_train):
 			# Add loss function.
 			total_loss = net.losses(logits, localisations,
 							   b_glocalisations, b_gscores,
