@@ -30,7 +30,7 @@ def get_batch(dataset_dir,
 				common_queue_capacity=20 * batch_size,
 				common_queue_min=10 * batch_size,
 				shuffle=True)
-
+	
 	[image, shape, glabels, gbboxes] = provider.get(['image', 'shape',
 											 'object/label',
 											 'object/bbox'])
