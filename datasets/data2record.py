@@ -53,6 +53,7 @@ def _convert_to_example(image_data, shape, bbox, label,imname):
 	
 
 def _processing_image(wordbb, imname,coder):
+	wordbb = tf.cast(wordbb, tf.float32)
 	image_data = tf.gfile.GFile(imname, 'r').read()
 	image = coder.decode_jpeg(image_data)
 	#image_data = np.array(Image.open(imname))
@@ -100,6 +101,7 @@ def run():
 		for j in res:
 			wordbb = wordBB[0,j]
 			imname = imnames[0,j][0]
+			print str(i) + imname
 			image_data, shape, bbox, label ,imname= _processing_image(wordbb, imname,coder)
 
 			example = _convert_to_example(image_data, shape, bbox, label, imname)

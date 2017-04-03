@@ -127,7 +127,6 @@ def preprocess_for_train(image, labels, bboxes,
         image, labels, bboxes, distort_bbox ,num= \
             distorted_bounding_box_crop(image, labels, bboxes,
                                         aspect_ratio_range=CROP_RATIO_RANGE)
-        tf.add_to_collection('EXTRA_LOSSES', num)
         
         # Resize image to output size.
         dst_image ,bboxes = \
@@ -136,9 +135,11 @@ def preprocess_for_train(image, labels, bboxes,
 
         # Randomly flip the image horizontally.
         #dst_image, bboxes = tf_image.random_flip_left_right(dst_image, bboxes)
+        with tf.device('/cpu:0'):
+            bbox_image = tf.image.draw_bounding_boxes(tf.expand_dims(dst_image,0), tf.expand_dims(bboxes,0))
+            tf.summary.image('image_with_box', bbox_image)
+            tf.add_to_collection('EXTRA_LOSSES', num)
 
-        bbox_image = tf.image.draw_bounding_boxes(tf.expand_dims(dst_image,0), tf.expand_dims(bboxes,0))
-        tf.summary.image('image_with_box', bbox_image)
         dst_image.set_shape([out_shape[0], out_shape[1], 3])
         # Rescale to normal range
         image = dst_image * 255.
