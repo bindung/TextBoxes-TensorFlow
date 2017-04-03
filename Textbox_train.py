@@ -188,6 +188,9 @@ def main(_):
 			  					 FLAGS.num_preprocessing_threads,
 			  					 is_training = True)
 			
+
+
+		with tf.device(FLAGS.gpu_train):
 			#with tf.device(FLAGS.gpu_train):
 
 			arg_scope = net.arg_scope(weight_decay=FLAGS.weight_decay)
@@ -195,8 +198,6 @@ def main(_):
 			with slim.arg_scope(arg_scope):
 				localisations, logits, end_points = \
 						net.net(b_image, is_training=True)
-
-		with tf.device(FLAGS.gpu_train):
 			# Add loss function.
 			total_loss = net.losses(logits, localisations,
 							   b_glocalisations, b_gscores,
