@@ -338,15 +338,17 @@ def text_losses(logits, localisations,
 				
 				# Add cross-entropy loss.
 				with tf.name_scope('cross_entropy_pos'):
-					#loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits[i],labels=ipmask)
-					loss = tf.square(fpmask*(logits[i][:,:,:,:,:,1] - fpmask))
-					loss = alpha*tf.reduce_mean(loss)
+					loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits[i],labels=ipmask)
+					loss = alpha * tf.losses.compute_weighted_loss(loss, fpmask)
+					#loss = tf.square(fpmask*(logits[i][:,:,:,:,:,1] - fpmask))
+					#loss = alpha*tf.reduce_mean(loss)
 					l_cross_pos.append(loss)
 
 				with tf.name_scope('cross_entropy_neg'):
-					#loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits[i],labels=inmask)
-					loss = tf.square(fnmask*(logits[i][:,:,:,:,:,0] - fnmask))
-					loss = alpha*tf.reduce_mean(loss)
+					loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits[i],labels=inmask)
+					loss = alpha * tf.losses.compute_weighted_loss(loss, fnmask)
+					#loss = tf.square(fnmask*(logits[i][:,:,:,:,:,0] - fnmask))
+					#loss = alpha*tf.reduce_mean(loss)
 					l_cross_neg.append(loss)
 
 				# Add localization loss: smooth L1, L2, ...
