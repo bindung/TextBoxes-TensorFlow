@@ -201,7 +201,6 @@ def main(_):
 				localisations, logits, end_points = \
 						net.net(b_image, is_training=True)
 			# Add loss function.
-		with tf.device('/cpu:0'):
 			total_loss = net.losses(logits, localisations,
 							   b_glocalisations, b_gscores,
 							   match_threshold=FLAGS.match_threshold,
