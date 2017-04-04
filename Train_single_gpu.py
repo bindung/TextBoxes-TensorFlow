@@ -193,8 +193,8 @@ def main(_):
 				localisations, logits, end_points = \
 						net.net(b_image, is_training=True)
 
-			# Add loss function.
-			total_loss = net.losses(logits, localisations,
+		# Add loss function.
+		total_loss = net.losses(logits, localisations,
 							   b_glocalisations, b_gscores,
 							   match_threshold=FLAGS.match_threshold,
 							   negative_ratio=FLAGS.negative_ratio,
