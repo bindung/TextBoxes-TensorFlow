@@ -187,7 +187,7 @@ def main(_):
 							 net,
 							 anchors,
 							 FLAGS.num_preprocessing_threads,
-							 file_pattern = file_pattern,
+							 file_pattern = FLAGS.file_pattern,
 							 is_training = True)
 			
 
