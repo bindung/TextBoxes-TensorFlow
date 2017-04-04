@@ -34,7 +34,7 @@ def _convert_to_example(image_data, shape, bbox, label,imname):
 	ymax = list(nbbox[:, 2])
 	xmax = list(nbbox[:, 3])
 
-	print 'shape: {}, height:{}, width:{}'.format(shape,shape[0],shape[1])
+	#print 'shape: {}, height:{}, width:{}'.format(shape,shape[0],shape[1])
 	example = tf.train.Example(features=tf.train.Features(feature={
 			'image/height': int64_feature(shape[0]),
 			'image/width': int64_feature(shape[1]),
@@ -53,7 +53,7 @@ def _convert_to_example(image_data, shape, bbox, label,imname):
 	
 
 def _processing_image(wordbb, imname,coder):
-	wordbb = tf.cast(wordbb, tf.float32)
+	#wordbb = tf.cast(wordbb, tf.float32)
 	image_data = tf.gfile.GFile(imname, 'r').read()
 	image = coder.decode_jpeg(image_data)
 	#image_data = np.array(Image.open(imname))
@@ -93,15 +93,16 @@ def run():
 		tfrecord_writer = tf.python_io.TFRecordWriter(tf_filename)
 		dir = i+1
 		pattern = re.compile(r'^{}\/'.format(dir))
-		i = 0
-		res =[i for i in range(imnames.shape[1]) if pattern.match(imnames[0,i][0]) != None ]
+		print dir
+		print pattern
+		res =[k for k in range(imnames.shape[1]) if pattern.match(imnames[0,k][0]) != None ]
 		print "The size of %s folder : %s" % (dir,len(res))
 		# shuffle
 		res = np.random.permutation(res)
 		for j in res:
 			wordbb = wordBB[0,j]
 			imname = imnames[0,j][0]
-			print str(i) + imname
+			#print str(i) + imname
 			image_data, shape, bbox, label ,imname= _processing_image(wordbb, imname,coder)
 
 			example = _convert_to_example(image_data, shape, bbox, label, imname)
