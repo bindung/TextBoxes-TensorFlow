@@ -23,6 +23,8 @@ tf.app.flags.DEFINE_float(
 	'negative_ratio', 3., 'Negative ratio in the loss function.')
 tf.app.flags.DEFINE_float(
 	'match_threshold', 0.5, 'Matching threshold in the loss function.')
+tf.app.flags.DEFINE_string(
+	'file_pattern', '*.tfrecord', 'tf_record pattern')
 
 # =========================================================================== #
 # General Flags.
@@ -185,6 +187,7 @@ def main(_):
 							 net,
 							 anchors,
 							 FLAGS.num_preprocessing_threads,
+							 file_pattern = file_pattern,
 							 is_training = True)
 			
 

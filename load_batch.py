@@ -20,9 +20,10 @@ def get_batch(dataset_dir,
 			  net,
 			  anchors,
 			  num_preprocessing_threads,
+			  file_pattern = '*.tfrecord',
 			  is_training = True):
 	
-	dataset = sythtextprovider.get_datasets(dataset_dir)
+	dataset = sythtextprovider.get_datasets(dataset_dir,file_pattern = file_pattern)
 
 	provider = slim.dataset_data_provider.DatasetDataProvider(
 				dataset,
