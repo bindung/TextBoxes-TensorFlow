@@ -173,20 +173,19 @@ def main(_):
 		anchors = net.anchors(out_shape)
 
 		# Create global_step.
-        with tf.device(FLAGS.gpu_train):
-        	global_step = slim.create_global_step()
+		
+		global_step = slim.create_global_step()
 		# create batch dataset
 
-		with tf.device('/cpu:0'):
-			b_image, b_glocalisations, b_gscores = \
-			load_batch.get_batch(FLAGS.dataset_dir,
-			  					 FLAGS.num_readers,
-			  					 FLAGS.batch_size,
-			  					 out_shape,
-			  					 net,
-			  					 anchors,
-			  					 FLAGS.num_preprocessing_threads,
-			  					 is_training = True)
+		b_image, b_glocalisations, b_gscores = \
+		load_batch.get_batch(FLAGS.dataset_dir,
+							 FLAGS.num_readers,
+							 FLAGS.batch_size,
+							 out_shape,
+							 net,
+							 anchors,
+							 FLAGS.num_preprocessing_threads,
+							 is_training = True)
 			
 
 
@@ -199,6 +198,7 @@ def main(_):
 				localisations, logits, end_points = \
 						net.net(b_image, is_training=True)
 			# Add loss function.
+		with tf.device('/cpu:0'):
 			total_loss = net.losses(logits, localisations,
 							   b_glocalisations, b_gscores,
 							   match_threshold=FLAGS.match_threshold,
@@ -226,8 +226,8 @@ def main(_):
 
 		with tf.device(FLAGS.gpu_train):
 			learning_rate = tf_utils.configure_learning_rate(FLAGS,
-                                                             FLAGS.num_samples,
-                                                             global_step)
+															 FLAGS.num_samples,
+															 global_step)
 			# Configure the optimization procedure 
 			optimizer = tf_utils.configure_optimizer(FLAGS, learning_rate)
 			summaries.add(tf.summary.scalar('learning_rate', learning_rate))

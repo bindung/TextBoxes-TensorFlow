@@ -186,7 +186,7 @@ def main(_):
 							 FLAGS.num_preprocessing_threads,
 							 is_training = True)
 		
-		with tf.device(FLAGS.gpu_data):
+		with tf.device(FLAGS.gpu_train):
 			arg_scope = net.arg_scope(weight_decay=FLAGS.weight_decay)
 
 			with slim.arg_scope(arg_scope):
@@ -218,7 +218,7 @@ def main(_):
 		for variable in slim.get_model_variables():
 			tf.summary.histogram(variable.op.name, variable)
 
-		with tf.device(FLAGS.gpu_data):
+		with tf.device(FLAGS.gpu_train):
 			learning_rate = tf_utils.configure_learning_rate(FLAGS,
 															 FLAGS.num_samples,
 															 global_step)
