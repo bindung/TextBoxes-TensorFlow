@@ -26,5 +26,5 @@ logs/
 __pycache__/
 
 *.log
-
+checkpoints
 checkpoints/VGG_VOC0712_SSD_*

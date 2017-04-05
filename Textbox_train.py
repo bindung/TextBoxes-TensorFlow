@@ -136,7 +136,7 @@ tf.app.flags.DEFINE_integer(
 	'evaluate the VGG and ResNet architectures which do not use a background '
 	'class for the ImageNet dataset.')
 tf.app.flags.DEFINE_string(
-	'model_name', 'txtbox_300', 'The name of the architecture to train.')
+	'model_name', 'text_box_300', 'The name of the architecture to train.')
 tf.app.flags.DEFINE_string(
 	'preprocessing_name', None, 'The name of the preprocessing to use. If left '
 	'as `None`, then the model_name flag is used.')
@@ -154,6 +154,20 @@ tf.app.flags.DEFINE_integer('num_samples', 12800,
 tf.app.flags.DEFINE_string(
 	'checkpoint_path', None,
 	'The path to a checkpoint from which to fine-tune.')
+tf.app.flags.DEFINE_string(
+    'checkpoint_model_scope', None,
+    'Model scope in the checkpoint. None if the same as the trained model.')
+tf.app.flags.DEFINE_string(
+    'checkpoint_exclude_scopes', None,
+    'Comma-separated list of scopes of variables to exclude when restoring '
+    'from a checkpoint.')
+tf.app.flags.DEFINE_string(
+    'trainable_scopes', None,
+    'Comma-separated list of scopes to filter the set of variables to train.'
+    'By default, None would train all the variables.')
+tf.app.flags.DEFINE_boolean(
+    'ignore_missing_vars', False,
+    'When restoring a checkpoint would ignore missing variables.')
 
 
 FLAGS = tf.app.flags.FLAGS

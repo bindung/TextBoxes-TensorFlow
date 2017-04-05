@@ -211,6 +211,7 @@ def get_init_fn(flags):
     # TODO(sguada) variables.filter_variables()
     variables_to_restore = []
     for var in slim.get_model_variables():
+        tf.logging.info(var)
         excluded = False
         for exclusion in exclusions:
             if var.op.name.startswith(exclusion):
