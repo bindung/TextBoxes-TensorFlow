@@ -141,7 +141,7 @@ def preprocess_for_train(image, labels, bboxes,
         tf.add_to_collection('EXTRA_LOSSES', num)
 
         dst_image = tf_image.distort_color(dst_image)
-        dst_image = tf_image_whitened(dst_image, [123., 117., 104.])
+        dst_image = tf_image.tf_image_whitened(dst_image, [123., 117., 104.])
 
         dst_image.set_shape([out_shape[0], out_shape[1], 3])
         # Rescale to normal range
