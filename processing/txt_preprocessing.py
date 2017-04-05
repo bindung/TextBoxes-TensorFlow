@@ -134,11 +134,14 @@ def preprocess_for_train(image, labels, bboxes,
                                                     out_shape[0],out_shape[1])
 
         # Randomly flip the image horizontally.
-        #dst_image, bboxes = tf_image.random_flip_left_right(dst_image, bboxes)
+        dst_image, bboxes = tf_image.random_flip_left_right(dst_image, bboxes)
 
         bbox_image = tf.image.draw_bounding_boxes(tf.expand_dims(dst_image,0), tf.expand_dims(bboxes,0))
         tf.summary.image('image_with_box', bbox_image)
         tf.add_to_collection('EXTRA_LOSSES', num)
+
+        dst_image = tf_image.distort_color(dst_image)
+        dst_image = tf_image_whitened(dst_image, [123., 117., 104.])
 
         dst_image.set_shape([out_shape[0], out_shape[1], 3])
         # Rescale to normal range
