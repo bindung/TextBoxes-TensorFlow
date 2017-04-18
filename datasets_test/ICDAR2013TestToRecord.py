@@ -7,7 +7,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
 import tensorflow as tf 
 import re
 from datasets_test.dataset_utils import int64_feature, float_feature, bytes_feature ,ImageCoder, norm
-from PIL import Image 
+from PIL import Image
 
 # The path of the ground truth file and image
 # Change this path to the directory of the ground truth txts
@@ -21,7 +21,6 @@ def readGT(gt_dir):
 	gt_coordinate_and_words = []
 	gt_names = []
 	path_list = []
-	true_path_list = []
 	txt_name_list = []
 
 	# Save the paths for all gound truth txt files
@@ -29,7 +28,7 @@ def readGT(gt_dir):
 		txt_path = ground_truth_path + txt_name
 		txt_name_list.append(txt_name)
 		path_list.append(txt_path)
-		#print path_list(correct)
+	#print path_list
 	
 	# Only include the txt paths with right contents
 	"""
@@ -65,7 +64,8 @@ def readGT(gt_dir):
 			gt_names.append(imname)
 		except ValueError:
 			continue
-		#print gt_names
+	#print gt_coordinate_and_words[1][:]
+	#print gt_names
 				
 	return gt_names, gt_coordinate_and_words
 
@@ -97,16 +97,23 @@ def _convert_to_example(image_data, shape, bounding_box, label, imname):
 # Deal with the image and the labels
 def _image_processing(wordbb, imname, coder):
 	# Read image according to the imname
-	imname = image_path + imname
-	image_data = tf.gfile.GFile(imname, 'r').read()
+	imname_path = image_path + imname
+	image_data = tf.gfile.GFile(imname_path, 'r').read()
 	image = coder.decode_jpeg(image_data)
 	shape = image.shape
+	
 	# The number of boxes in an image
 	bounding_box = []
+
 	xmin = wordbb['xmin']
 	ymin = wordbb['ymin']
 	xmax = wordbb['xmax']
 	ymax = wordbb['ymax']
+	
+	xmin = np.maximum(xmin/shape[1], 0.0)
+	ymin = np.maximum(ymin/shape[0], 0.0)
+	xmax = np.minimum(xmax/shape[1], 1.0)
+	ymax = np.minimum(ymax/shape[0], 1.0)
 	
 	try:
 		number_of_boxes = wordbb.shape[0]
@@ -120,6 +127,9 @@ def _image_processing(wordbb, imname, coder):
 	
 	label = [1 for i in range(number_of_boxes)]
 	shape = list(shape)
+
+	print bounding_box
+
 	return image_data, shape, bounding_box, label, imname
 
 def main():
@@ -130,14 +140,16 @@ def main():
 	tfrecord_writer = tf.python_io.TFRecordWriter(tf_filename)
 	# Generate index and shuffle
 	index = [i for i in range(len(gt_names))]
-	random_index = np.random.permutation(index)
-	print 'The size of testing data is' + str(len(gt_names))
+	#random_index = np.random.permutation(index)
+	print 'The size of testing data is ' + str(len(gt_names))
 	# Deal with every image
-	for i in random_index:
+	for i in index:
 		imname = gt_names[i]
 		wordbb = gt_coordinate_and_words[i]
 		#print wordbb
 		image_data, shape, bounding_box, label, imname = _image_processing(wordbb, imname, coder)
+		#print bounding_box
+		print imname
 		example = _convert_to_example(image_data, shape, bounding_box, label, imname)
 		tfrecord_writer.write(example.SerializeToString())
 		#print i
