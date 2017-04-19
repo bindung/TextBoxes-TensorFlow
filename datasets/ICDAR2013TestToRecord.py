@@ -6,14 +6,50 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
 import tensorflow as tf 
 import re
-from datasets_test.dataset_utils import int64_feature, float_feature, bytes_feature ,ImageCoder, norm
+from datasets.dataset_utils import int64_feature, float_feature, bytes_feature ,ImageCoder, norm
 from PIL import Image
 
+data_path = 'data/ICDAR2013/'
+
+tf.app.flags.DEFINE_string(
+ 'dataset', 'train',
+ 'the dataset is for training or testing')
+
+tf.app.flags.DEFINE_string(
+ 'ground_truth_path_test', '../data/ICDAR2013/ICDAR-Test-GT/',
+ 'Directory of the ground truth txt for test set .')
+
+tf.app.flags.DEFINE_string(
+ 'ground_truth_path_train', '../data/ICDAR2013/ICDAR-Training-GT/',
+ 'Directory of the ground truth txt for training set .')
+
+tf.app.flags.DEFINE_string(
+ 'image_path_test', '../data/ICDAR2013/ICDAR-Test-Images/',
+ 'Directory of ICDAR2013 test data.')
+
+tf.app.flags.DEFINE_string(
+ 'image_path_train', '../data/ICDAR2013/ICDAR-Training-Images/',
+ 'Directory of ICDAR2013 training data.')
+
+tf.app.flags.DEFINE_string(
+ 'tf_filename_test', '../data/ICDAR2013/ICDAR2013_Test.tfrecord',
+ 'test set tfrecord file name')
+
+tf.app.flags.DEFINE_string(
+ 'tf_filename_train', '../data/ICDAR2013/ICDAR2013_Train.tfrecord',
+ 'train set tfrecord file name')
+
+FLAGS = tf.app.flags.FLAGS
+
+arg = str(sys.argv[1:])
+"""
 # The path of the ground truth file and image
-# Change this path to the directory of the ground truth txts
-ground_truth_path = '../data/ICDAR2013/ICDAR-Test-GT/'
-# Change this path to the directory of the image files
-image_path = '../data/ICDAR2013/ICDAR-Test-Images/'
+ground_truth_path_test = '../data/ICDAR2013/ICDAR-Test-GT/'
+image_path_test = '../data/ICDAR2013/ICDAR-Test-Images/'
+
+ground_truth_path_train = '../data/ICDAR2013/ICDAR-Training-GT/'
+image_path_train = '../data/ICDAR2013/ICDAR-Training-Images/'
+"""
 
 # Read from and parse the txt files
 def readGT(gt_dir):
@@ -23,49 +59,49 @@ def readGT(gt_dir):
 	path_list = []
 	txt_name_list = []
 
+	if (arg == "['--ground_truth_path_test=../data/ICDAR2013/ICDAR-Test-GT/']"):
 	# Save the paths for all gound truth txt files
-	for txt_name in os.listdir(gt_dir):
-		txt_path = ground_truth_path + txt_name
-		txt_name_list.append(txt_name)
-		path_list.append(txt_path)
-	#print path_list
-	
-	# Only include the txt paths with right contents
-	"""
-	for path in path_list:
-		file_content = open(path,'rU').readlines()
-		number_of_elements = 0
-		for lines in file_content:
-			lines = lines.strip()
-     		elements_in_a_line = lines.split(",")    		
-     		number_of_elements += len(elements_in_a_line)
+		for txt_name in os.listdir(gt_dir):
+			txt_path = str(FLAGS.ground_truth_path_test) + txt_name
+			txt_name_list.append(txt_name)
+			path_list.append(txt_path)
 
-     	if number_of_elements % 5 == 0:
- 			true_path_list.append(path)
- 			
- 	print true_path_list
-	"""
+		for file_path in path_list:
+			try:
+				gt_file = np.loadtxt(file_path, dtype={'names':('xmin','ymin','xmax','ymax','word'),'formats':(np.float, np.float, np.float, np.float, '|S15')}, delimiter = ',')
+				gt_coordinate_and_words.append(gt_file)
+				
+				# Save image names
+				image_name = os.path.basename(file_path)
+				if len(image_name) == 12:
+					imname = image_name[3:8] + '.jpg'
+				if len(image_name) == 13:
+					imname = image_name[3:9] + '.jpg'
+				if len(image_name) == 14:
+					imname = image_name[3:10] +'.jpg'
+				gt_names.append(imname)
 
-	for file_path in path_list:
-		try:
-			gt_file = np.loadtxt(file_path, dtype={'names':('xmin','ymin','xmax','ymax','word'),'formats':(np.float, np.float, np.float, np.float, '|S15')}, delimiter = ',')
-			gt_coordinate_and_words.append(gt_file)
-			#true_path_list.append(file_path)
-			
-			# Save image names
-			#for image_name in txt_name_list: 
-			image_name = os.path.basename(file_path)
-			if len(image_name) == 12:
-				imname = image_name[3:8] + '.jpg'
-			if len(image_name) == 13:
-				imname = image_name[3:9] + '.jpg'
-			if len(image_name) == 14:
-				imname = image_name[3:10] +'.jpg'
-			gt_names.append(imname)
-		except ValueError:
-			continue
-	#print gt_coordinate_and_words[1][:]
-	#print gt_names
+			except ValueError:
+				pass
+
+	else:
+		for txt_name in os.listdir(gt_dir):
+			txt_path = str(FLAGS.ground_truth_path_train) + txt_name
+			txt_name_list.append(txt_name)
+			path_list.append(txt_path)
+
+		for file_path in path_list:
+			try:
+				gt_file = np.loadtxt(file_path, dtype={'names':('xmin','ymin','xmax','ymax','word'),'formats':(np.float, np.float, np.float, np.float, '|S15')}, delimiter = ' ')
+				gt_coordinate_and_words.append(gt_file)
+
+				# Save image names
+				image_name = os.path.basename(file_path)
+				imname = image_name[3:6] + '.jpg'
+				gt_names.append(imname)
+
+			except ValueError:
+				pass
 				
 	return gt_names, gt_coordinate_and_words
 
@@ -76,12 +112,6 @@ def _convert_to_example(image_data, shape, bbox, label, imname):
 	ymax = list(nbbox[:, 2])
 	xmax = list(nbbox[:, 3])
 
-	"""
-	print ymin
-	print xmin
-	print ymax
-	print xmax
-	"""
 	print 'shape:{}, height:{}, width:{}'.format(shape, shape[0], shape[1])
 	example = tf.train.Example(features=tf.train.Features(feature={
 			'image/height': int64_feature(shape[0]),
@@ -97,14 +127,17 @@ def _convert_to_example(image_data, shape, bbox, label, imname):
 			'image/encoded': bytes_feature(image_data),
 			'image/name': bytes_feature(imname),
 			}))
-	#print example
 	return example
 
 
 # Deal with the image and the labels
 def _image_processing(wordbb, imname, coder):
 	# Read image according to the imname
-	imname_path = image_path + imname
+	if (arg == "['--ground_truth_path_test=../data/ICDAR2013/ICDAR-Test-GT/']"): 
+		imname_path = FLAGS.image_path_test + imname
+	else:
+		imname_path = FLAGS.image_path_train + imname
+	
 	image_data = tf.gfile.GFile(imname_path, 'r').read()
 	image = coder.decode_jpeg(image_data)
 	shape = image.shape
@@ -142,9 +175,15 @@ def _image_processing(wordbb, imname, coder):
 
 def main():
 	# Get gt_names and gt_coordinate_and_words
-	gt_names, gt_coordinate_and_words = readGT(ground_truth_path)
 	coder = ImageCoder()
-	tf_filename = 'ICDAR2013_Test.tfrecord'
+
+	if (arg == "['--ground_truth_path_test=../data/ICDAR2013/ICDAR-Test-GT/']"):
+		gt_names, gt_coordinate_and_words = readGT(FLAGS.ground_truth_path_test)
+		tf_filename = FLAGS.tf_filename_test
+	else:
+		gt_names, gt_coordinate_and_words = readGT(FLAGS.ground_truth_path_train)
+		tf_filename = FLAGS.tf_filename_train
+
 	tfrecord_writer = tf.python_io.TFRecordWriter(tf_filename)
 	# Generate index and shuffle
 	index = [i for i in range(len(gt_names))]
@@ -160,8 +199,16 @@ def main():
 		example = _convert_to_example(image_data, shape, bbox, label, imname)
 		tfrecord_writer.write(example.SerializeToString())
 		#print i
-	print 'Transform to tfrecord finished!'
-	print 'The size of testing data is ' + str(len(gt_names))
+
+	if (arg == "['--ground_truth_path_test=../data/ICDAR2013/ICDAR-Test-GT/']"):
+		print 'Transform test set to tfrecord finished!'
+		print 'The size of data is ' + str(len(gt_names))
+		print arg
+	else:
+		print 'Transform training set to tfrecord finished!'
+		print 'The size of data is ' + str(len(gt_names))
+		print arg
+		print arg[0]
 
 if __name__ == '__main__':
 	main()
