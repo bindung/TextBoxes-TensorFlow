@@ -59,7 +59,7 @@ def readGT(gt_dir):
 	path_list = []
 	txt_name_list = []
 
-	if (arg == "['--ground_truth_path_test=../data/ICDAR2013/ICDAR-Test-GT/']"):
+	if (arg.startswith("['--ground_truth_path_test")):
 	# Save the paths for all gound truth txt files
 		for txt_name in os.listdir(gt_dir):
 			txt_path = str(FLAGS.ground_truth_path_test) + txt_name
@@ -73,12 +73,16 @@ def readGT(gt_dir):
 				
 				# Save image names
 				image_name = os.path.basename(file_path)
+				"""
 				if len(image_name) == 12:
 					imname = image_name[3:8] + '.jpg'
 				if len(image_name) == 13:
 					imname = image_name[3:9] + '.jpg'
 				if len(image_name) == 14:
 					imname = image_name[3:10] +'.jpg'
+				"""
+				pattern = re.compile(r"\d+")
+				imname = 'img_' + pattern.findall(image_name)[0] + '.jpg'
 				gt_names.append(imname)
 
 			except ValueError:
@@ -97,11 +101,13 @@ def readGT(gt_dir):
 
 				# Save image names
 				image_name = os.path.basename(file_path)
-				imname = image_name[3:6] + '.jpg'
+				pattern = re.compile(r"\d+")
+				imname = pattern.findall(image_name)[0] + '.jpg'
 				gt_names.append(imname)
 
 			except ValueError:
 				pass
+		print gt_names
 				
 	return gt_names, gt_coordinate_and_words
 
@@ -133,7 +139,7 @@ def _convert_to_example(image_data, shape, bbox, label, imname):
 # Deal with the image and the labels
 def _image_processing(wordbb, imname, coder):
 	# Read image according to the imname
-	if (arg == "['--ground_truth_path_test=../data/ICDAR2013/ICDAR-Test-GT/']"): 
+	if (arg.startswith("['--ground_truth_path_test")): 
 		imname_path = FLAGS.image_path_test + imname
 	else:
 		imname_path = FLAGS.image_path_train + imname
@@ -177,7 +183,7 @@ def main():
 	# Get gt_names and gt_coordinate_and_words
 	coder = ImageCoder()
 
-	if (arg == "['--ground_truth_path_test=../data/ICDAR2013/ICDAR-Test-GT/']"):
+	if (arg.startswith("['--ground_truth_path_test")):
 		gt_names, gt_coordinate_and_words = readGT(FLAGS.ground_truth_path_test)
 		tf_filename = FLAGS.tf_filename_test
 	else:
@@ -200,15 +206,12 @@ def main():
 		tfrecord_writer.write(example.SerializeToString())
 		#print i
 
-	if (arg == "['--ground_truth_path_test=../data/ICDAR2013/ICDAR-Test-GT/']"):
+	if (arg.startswith("['--ground_truth_path_test")):
 		print 'Transform test set to tfrecord finished!'
 		print 'The size of data is ' + str(len(gt_names))
-		print arg
 	else:
 		print 'Transform training set to tfrecord finished!'
 		print 'The size of data is ' + str(len(gt_names))
-		print arg
-		print arg[0]
 
 if __name__ == '__main__':
 	main()
