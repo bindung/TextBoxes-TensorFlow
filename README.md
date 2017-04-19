@@ -45,6 +45,21 @@ Overwrite all files, so make the training pipeline much clear.
 	
 	1. Write the load_batch . This can be resued in any preproceesing jobs.
 	2. Rewrite the traning file, so make the pipeline more clear.
+	
+
+To generate tfrecords for both test and training sets for ICDAR2013 dataset:
+```bash
+cd datasets
+```
+Generate tfrecord for test set:
+```bash
+python ICDAR2013ToRecord.py --ground_truth_path_test=../data/ICDAR2013/ICDAR-Test-GT/
+```
+Generate tfrecord for training set:
+```bash
+python ICDAR2013ToRecord.py --ground_truth_path_train=../data/ICDAR2013/ICDAR-Training-GT/
+```
+The generated tfrecords are in TextBoxes-TensorFlow/data/ICDAR2013 folder.
 
 # Problems to be solved： 
 	1. The loss decreases slowly after 2000 iterations, find why?		
