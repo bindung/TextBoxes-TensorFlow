@@ -316,14 +316,49 @@ def text_losses(logits, localisations,
 	return: loss
 	"""
 	with tf.name_scope(scope, 'text_loss'):
-		l_cross_pos = []
-		l_cross_neg = []
-		l_loc = []
-		n_poses = []
+		flogits = []
+		fgclasses = []
+		flocalisations = []
+		fglocalisations = []
 		for i in range(len(logits)):
-			dtype = logits[i].dtype
+			flogits.append(tf.reshape(logits[i], [-1, 2]))
+			pmask = gscores[i] > match_threshold
+			ipmask = tf.cast(pmask, tf.int32)
+			fgclasses.append(tf.reshape(ipmask, [-1]))
+			flocalisations.append(tf.reshape(localisations[i], [-1, 4]))
+			fglocalisations.append(tf.reshape(glocalisations[i], [-1, 4]))
+		# And concat the crap!
+		logits = tf.concat(flogits, axis=0)
+		gclasses = tf.concat(fgclasses, axis=0)
+		localisations = tf.concat(flocalisations, axis=0)
+		glocalisations = tf.concat(fglocalisations, axis=0)
+		dtype = logits[i].dtype	
+		fpmask = tf.cast(gclasses, dtype)
+		numofpositive = tf.reduce_sum(gclasses,'numofpositive')
+
+		with tf.name_scope('cross_entropy'):
+			loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits,labels=gclasses)
+			entro_loss = tf.reduce_mean(loss,'entropy_loss')
+
+
+		with tf.name_scope('localization'):
+			# Weights Tensor: positive mask + random negative.
+			weights = tf.expand_dims(alpha * fpmask, axis=-1)
+			loss = custom_layers.abs_smooth(localisations - glocalisations)
+			loc_loss = tf.losses.compute_weighted_loss(loss, weights)
+			
+
+		with tf.name_scope('total'):
+			# Add to EXTRA LOSSES TF.collection
+			tf.add_to_collection('EXTRA_LOSSES', numofpositive)
+			tf.add_to_collection('EXTRA_LOSSES', entro_loss)
+			tf.add_to_collection('EXTRA_LOSSES', loc_loss)
+
+			total_loss = tf.add(entro_loss, loc_loss, 'total_loss')
+			tf.add_to_collection('EXTRA_LOSSES', total_loss)
+
+			"""
 			with tf.name_scope('block_%i' % i):
-				
 				# Determine weights Tensor.
 				pmask = gscores[i] > match_threshold
 				ipmask = tf.cast(pmask, tf.int32)
@@ -359,7 +394,7 @@ def text_losses(logits, localisations,
 					loss = custom_layers.abs_smooth(localisations[i] - glocalisations[i])
 					loss = tf.losses.compute_weighted_loss(loss, weights)
 					l_loc.append(loss)
-
+				
 		# Additional total losses...
 		with tf.name_scope('total'):
 			total_cross_pos = tf.add_n(l_cross_pos, 'cross_entropy_pos')
@@ -376,7 +411,7 @@ def text_losses(logits, localisations,
 
 			total_loss = tf.add(total_loc, total_cross, 'total_loss')
 			tf.add_to_collection('EXTRA_LOSSES', total_loss)
-
+			"""
 		return total_loss
 
 
