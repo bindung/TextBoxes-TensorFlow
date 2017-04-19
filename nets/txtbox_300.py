@@ -334,11 +334,11 @@ def text_losses(logits, localisations,
 		glocalisations = tf.concat(fglocalisations, axis=0)
 		dtype = logits[i].dtype	
 		fpmask = tf.cast(gclasses, dtype)
-		numofpositive = tf.reduce_sum(gclasses,'numofpositive')
+		numofpositive = tf.reduce_sum(gclasses, name='numofpositive')
 
 		with tf.name_scope('cross_entropy'):
 			loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits,labels=gclasses)
-			entro_loss = tf.reduce_mean(loss,'entropy_loss')
+			entro_loss = tf.reduce_mean(loss, name='entropy_loss')
 
 
 		with tf.name_scope('localization'):
