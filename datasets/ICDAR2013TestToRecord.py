@@ -11,9 +11,9 @@ from PIL import Image
 
 # The path of the ground truth file and image
 # Change this path to the directory of the ground truth txts
-ground_truth_path = '/Users/kiyoshi/Desktop/Research/LAB/FirstAccessment/2ndPaper/Textbox-Tensor/ICDAR-Test-GT/'
+ground_truth_path = '../data/ICDAR2013/ICDAR-Test-GT/'
 # Change this path to the directory of the image files
-image_path = '/Users/kiyoshi/Desktop/Research/LAB/FirstAccessment/2ndPaper/Textbox-Tensor/ICDAR-Test-Images/'
+image_path = '../data/ICDAR2013/ICDAR-Test-Images/'
 
 # Read from and parse the txt files
 def readGT(gt_dir):
