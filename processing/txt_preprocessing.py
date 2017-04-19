@@ -174,8 +174,7 @@ def preprocess_for_eval(image, labels, bboxes,
     Returns:
         A preprocessed image.
     """
-    pass
-    '''
+
     with tf.name_scope(scope):
         if image.get_shape().ndims != 3:
             raise ValueError('Input must be of size [height, width, C>0]')
@@ -188,6 +187,10 @@ def preprocess_for_eval(image, labels, bboxes,
             bboxes = bbox_img
         else:
             bboxes = tf.concat([bbox_img, bboxes], axis=0)
+
+        if resize == Resize.NONE:
+            # No resizing...
+            pass
         elif resize == Resize.CENTRAL_CROP:
             # Central cropping of the image.
             image, bboxes = tf_image.resize_image_bboxes_with_crop_or_pad(
@@ -223,7 +226,6 @@ def preprocess_for_eval(image, labels, bboxes,
             bboxes = tf.boolean_mask(bboxes, mask)
         # Image data format.
         return image, labels, bboxes, bbox_img
-    '''
 
 def preprocess_image(image,
                      labels,
