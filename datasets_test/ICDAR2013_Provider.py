@@ -18,7 +18,7 @@ ITEMS_TO_DESCRIPTIONS = {
     'object/label': 'label'
 }
 SPLITS_TO_SIZES = {
-    'test': 231,
+    'test': 230,
 }
 NUM_CLASSES = 2
 
@@ -33,10 +33,10 @@ def get_datasets(data_dir,file_pattern = '*.tfrecord'):
         'image/width': tf.FixedLenFeature([1], tf.int64),
         'image/channels': tf.FixedLenFeature([1], tf.int64),
         'image/shape': tf.FixedLenFeature([3], tf.int64),
-        'image/object/bbox/xmin': tf.VarLenFeature(dtype=tf.float32),
         'image/object/bbox/ymin': tf.VarLenFeature(dtype=tf.float32),
-        'image/object/bbox/xmax': tf.VarLenFeature(dtype=tf.float32),
+        'image/object/bbox/xmin': tf.VarLenFeature(dtype=tf.float32),
         'image/object/bbox/ymax': tf.VarLenFeature(dtype=tf.float32),
+        'image/object/bbox/xmax': tf.VarLenFeature(dtype=tf.float32),
         'image/object/bbox/label': tf.VarLenFeature(dtype=tf.int64),
         'image/format': tf.FixedLenFeature([], tf.string, default_value='jpeg'),
         'image/encoded': tf.FixedLenFeature([], tf.string, default_value=''),
@@ -50,7 +50,7 @@ def get_datasets(data_dir,file_pattern = '*.tfrecord'):
         'height': slim.tfexample_decoder.Tensor('image/height'),
         'width': slim.tfexample_decoder.Tensor('image/width'),
         'object/bbox': slim.tfexample_decoder.BoundingBox(
-                ['xmin', 'ymin', 'xmax', 'ymax'], 'image/object/bbox/'),
+                ['ymin', 'xmin', 'ymax', 'xmax'], 'image/object/bbox/'),
         'object/label': slim.tfexample_decoder.Tensor('image/object/bbox/label'),
         #'imaname': slim.tfexample_decoder.Tensor('image/name'),
         #'objext/txt': slim.tfexample_decoder.Tensor('image/object/bbox/label_text'),
@@ -70,3 +70,5 @@ def get_datasets(data_dir,file_pattern = '*.tfrecord'):
         items_to_descriptions=ITEMS_TO_DESCRIPTIONS,
         num_classes=NUM_CLASSES,
         labels_to_names=labels_to_names)
+
+
