@@ -100,9 +100,9 @@ def ssd_bboxes_select_layer(predictions_layer,
 def ssd_bboxes_select(predictions_net,
                       localizations_net,
                       anchors_net,
-                      select_threshold=0.5,
+                      select_threshold=0,
                       img_shape=(300, 300),
-                      num_classes=21,
+                      num_classes=2,
                       decode=True):
     """Extract classes, scores and bounding boxes from network output layers.
 
