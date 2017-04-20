@@ -338,7 +338,8 @@ def text_losses(logits, localisations,
 
 		with tf.name_scope('cross_entropy'):
 			loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits,labels=gclasses)
-			entro_loss = tf.reduce_mean(loss, name='entropy_loss')
+			#entro_loss = tf.reduce_mean(loss, name='entropy_loss')
+			entro_loss = tf.losses.compute_weighted_loss(loss, fpmask)
 
 
 		with tf.name_scope('localization'):
