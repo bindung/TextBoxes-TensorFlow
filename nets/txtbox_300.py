@@ -346,7 +346,7 @@ def text_losses(logits, localisations,
 			minval = val[-1]
 			nmask = tf.logical_and(tf.cast(1- gclasses, tf.bool), loss_neg > minval)
 			mask = tf.logical_or(nmask,tf.cast(gclasses,tf.bool))
-			fpmask = tf.cast(mask, tf.dtype)
+			fpmask = tf.cast(mask, dtype)
 			entro_loss = tf.losses.compute_weighted_loss(loss, fpmask)
 
 
