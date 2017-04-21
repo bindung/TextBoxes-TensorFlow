@@ -48,8 +48,8 @@ EVAL_SIZE = (300, 300)
 def distorted_bounding_box_crop(image,
                                 labels,
                                 bboxes,
-                                min_object_covered=0.5,
-                                aspect_ratio_range=(0.9, 1.1),
+                                min_object_covered=0.9,
+                                aspect_ratio_range=(0.7, 1.3),
                                 area_range=(0.1, 1.0),
                                 max_attempts=200,
                                 scope=None):
@@ -129,32 +129,37 @@ def preprocess_for_train(image, labels, bboxes,
                                         aspect_ratio_range=CROP_RATIO_RANGE)
         
         # Resize image to output size.
+        
         dst_image = tf_image.resize_image(image, out_shape,
                                           method=tf.image.ResizeMethod.BILINEAR,
                                           align_corners=False)
+        
         '''
         dst_image ,bboxes = \
         tf_image.resize_image_bboxes_with_crop_or_pad(image, bboxes,
                                                     out_shape[0],out_shape[1])
+        
         '''
         # Randomly flip the image horizontally.
         dst_image, bboxes = tf_image.random_flip_left_right(dst_image, bboxes)
 
         bbox_image = tf.image.draw_bounding_boxes(tf.expand_dims(dst_image,0), tf.expand_dims(bboxes,0))
         tf.summary.image('image_with_box', bbox_image)
-        tf.add_to_collection('EXTRA_LOSSES', num)
+        #tf.add_to_collection('EXTRA_LOSSES', num)
 
+        
         dst_image = tf_image.apply_with_random_selector(
                 dst_image,
                 lambda x, ordering: tf_image.distort_color_2(x, ordering, True),
                 num_cases=4)
-        tf_image.tf_summary_image(dst_image, bboxes, 'image_color_distorted')
-
+        
+        
+        
         # Rescale to normal range
         image = dst_image * 255.
-        dst_image.set_shape([out_shape[0], out_shape[1], 3])
+        image.set_shape([out_shape[0], out_shape[1], 3])
         image = tf_image.tf_image_whitened(image, [_R_MEAN, _G_MEAN, _B_MEAN])
-
+        tf_image.tf_summary_image(image, bboxes, 'image_color_distorted')
         #dst_image = tf.cast(dst_image,tf.float32)
         return image, labels, bboxes,num
 

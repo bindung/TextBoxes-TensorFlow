@@ -316,6 +316,7 @@ def text_losses(logits, localisations,
 	return: loss
 	"""
 	with tf.name_scope(scope, 'text_loss'):
+		"""
 		flogits = []
 		fgclasses = []
 		flocalisations = []
@@ -346,8 +347,8 @@ def text_losses(logits, localisations,
 			minval = val[-1]
 			nmask = tf.logical_and(tf.cast(1- gclasses, tf.bool), loss_neg > minval)
 			mask = tf.logical_or(nmask,tf.cast(gclasses,tf.bool))
-			fpmask = tf.cast(mask, dtype)
-			entro_loss = tf.losses.compute_weighted_loss(loss, fpmask)
+			mpmask = tf.cast(mask, dtype)
+			entro_loss = tf.losses.compute_weighted_loss(loss, mpmask)
 
 
 		with tf.name_scope('localization'):
@@ -365,8 +366,12 @@ def text_losses(logits, localisations,
 
 			total_loss = tf.add(entro_loss, loc_loss, 'total_loss')
 			tf.add_to_collection('EXTRA_LOSSES', total_loss)
-
-			"""
+		"""
+		l_cross_pos = []
+        l_cross_neg = []
+        l_loc = []
+        for i in range(len(logits)):
+            dtype = logits[i].dtype
 			with tf.name_scope('block_%i' % i):
 				# Determine weights Tensor.
 				pmask = gscores[i] > match_threshold
@@ -390,7 +395,7 @@ def text_losses(logits, localisations,
 					l_cross_pos.append(loss)
 
 				with tf.name_scope('cross_entropy_neg'):
-					loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits[i],labels=inmask)
+					loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=-logits[i],labels=inmask)
 					loss = tf.losses.compute_weighted_loss(loss, fnmask)
 					#loss = tf.square(fnmask*(logits[i][:,:,:,:,:,0] - fnmask))
 					#loss = alpha*tf.reduce_mean(loss)
@@ -420,7 +425,7 @@ def text_losses(logits, localisations,
 
 			total_loss = tf.add(total_loc, total_cross, 'total_loss')
 			tf.add_to_collection('EXTRA_LOSSES', total_loss)
-			"""
+		
 		return total_loss
 
 
