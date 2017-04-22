@@ -12,16 +12,12 @@ from PIL import Image
 data_path = 'data/ICDAR2013/'
 
 tf.app.flags.DEFINE_string(
- 'dataset', 'train',
+ 'dataset', 'test',
  'the dataset is for training or testing')
 
 tf.app.flags.DEFINE_string(
- 'ground_truth_path_test', '../data/ICDAR2013/ICDAR-Test-GT/',
+ 'ground_truth_path', '../data/ICDAR2013/ICDAR-Test-GT/',
  'Directory of the ground truth txt for test set .')
-
-tf.app.flags.DEFINE_string(
- 'ground_truth_path_train', '../data/ICDAR2013/ICDAR-Training-GT/',
- 'Directory of the ground truth txt for training set .')
 
 tf.app.flags.DEFINE_string(
  'image_path_test', '../data/ICDAR2013/ICDAR-Test-Images/',
@@ -41,7 +37,6 @@ tf.app.flags.DEFINE_string(
 
 FLAGS = tf.app.flags.FLAGS
 
-arg = str(sys.argv[1:])
 """
 # The path of the ground truth file and image
 ground_truth_path_test = '../data/ICDAR2013/ICDAR-Test-GT/'
@@ -59,10 +54,10 @@ def readGT(gt_dir):
 	path_list = []
 	txt_name_list = []
 
-	if (arg.startswith("['--ground_truth_path_test")):
+	if (FLAGS.dataset == 'test'):
 	# Save the paths for all gound truth txt files
 		for txt_name in os.listdir(gt_dir):
-			txt_path = str(FLAGS.ground_truth_path_test) + txt_name
+			txt_path = str(FLAGS.ground_truth_path) + txt_name
 			txt_name_list.append(txt_name)
 			path_list.append(txt_path)
 
@@ -90,7 +85,7 @@ def readGT(gt_dir):
 
 	else:
 		for txt_name in os.listdir(gt_dir):
-			txt_path = str(FLAGS.ground_truth_path_train) + txt_name
+			txt_path = str(FLAGS.ground_truth_path) + txt_name
 			txt_name_list.append(txt_name)
 			path_list.append(txt_path)
 
@@ -139,7 +134,7 @@ def _convert_to_example(image_data, shape, bbox, label, imname):
 # Deal with the image and the labels
 def _image_processing(wordbb, imname, coder):
 	# Read image according to the imname
-	if (arg.startswith("['--ground_truth_path_test")): 
+	if (FLAGS.dataset == 'test'): 
 		imname_path = FLAGS.image_path_test + imname
 	else:
 		imname_path = FLAGS.image_path_train + imname
@@ -183,11 +178,11 @@ def main():
 	# Get gt_names and gt_coordinate_and_words
 	coder = ImageCoder()
 
-	if (arg.startswith("['--ground_truth_path_test")):
-		gt_names, gt_coordinate_and_words = readGT(FLAGS.ground_truth_path_test)
+	if (FLAGS.dataset == 'test'):
+		gt_names, gt_coordinate_and_words = readGT(FLAGS.ground_truth_path)
 		tf_filename = FLAGS.tf_filename_test
 	else:
-		gt_names, gt_coordinate_and_words = readGT(FLAGS.ground_truth_path_train)
+		gt_names, gt_coordinate_and_words = readGT(FLAGS.ground_truth_path)
 		tf_filename = FLAGS.tf_filename_train
 
 	tfrecord_writer = tf.python_io.TFRecordWriter(tf_filename)
@@ -206,7 +201,7 @@ def main():
 		tfrecord_writer.write(example.SerializeToString())
 		#print i
 
-	if (arg.startswith("['--ground_truth_path_test")):
+	if (FLAGS.dataset == 'test'):
 		print 'Transform test set to tfrecord finished!'
 		print 'The size of data is ' + str(len(gt_names))
 	else:
