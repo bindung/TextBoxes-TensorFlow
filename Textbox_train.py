@@ -218,7 +218,6 @@ def main(_):
 			# Add loss function.
 			total_loss = net.losses(logits, localisations,
 							   b_glocalisations, b_gscores,
-							   match_threshold=FLAGS.match_threshold,
 							   negative_ratio=FLAGS.negative_ratio,
 							   alpha=FLAGS.loss_alpha,
 							   label_smoothing=FLAGS.label_smoothing)
