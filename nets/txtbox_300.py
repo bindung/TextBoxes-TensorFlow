@@ -29,7 +29,8 @@ TextboxParams = namedtuple('TextboxParameters',
 										 'normalizations',
 										 'prior_scaling',
 										 'step',
-										 'scales'
+										 'scales',
+										 'match_threshold'
 										 ])
 
 class TextboxNet(object):
@@ -50,12 +51,13 @@ class TextboxNet(object):
 		num_classes=2,
 		feat_layers=['conv4', 'conv7', 'conv8', 'conv9', 'conv10', 'global'],
 		feat_shapes=[(38, 38), (19, 19), (10, 10), (5, 5), (3, 3), (1, 1)],
-		scale_range=[0.20, 0.90],
+		scale_range=[0.05, 0.85],
 		anchor_ratios=[1,2,3,5,7,10],
 		normalizations=[20, -1, -1, -1, -1, -1],
 		prior_scaling=[0.1, 0.1, 0.2, 0.2],
 		step = 0.14 ,
-		scales = [0.2, 0.34, 0.48, 0.62, 0.76, 0.90]
+		scales = [0.05 + i*0.8/5  for i in range(6)],
+		match_threshold = 0.2
 		)
 
 	def __init__(self, params=None):
@@ -103,19 +105,18 @@ class TextboxNet(object):
 									  0.5,
 									  dtype)
 
-	def bboxes_encode(self, bboxes, anchors, num,match_threshold = 0.5,
+	def bboxes_encode(self, bboxes, anchors, num,
 					  scope='text_bboxes_encode'):
 		"""Encode labels and bounding boxes.
 		"""
 		return textbox_common.tf_text_bboxes_encode(
 						bboxes, anchors, num,
-						matching_threshold=0.5,
+						match_threshold=self.params.match_threshold,
 						prior_scaling=self.params.prior_scaling,
 						scope=scope)
 
 	def losses(self, logits, localisations,
 			   glocalisations, gscores,
-			   match_threshold=0.5,
 			   negative_ratio=3.,
 			   alpha=1.,
 			   label_smoothing=0.,
@@ -124,7 +125,7 @@ class TextboxNet(object):
 		"""
 		return text_losses(logits, localisations,
 						  glocalisations, gscores,
-						  match_threshold=match_threshold,
+						  match_threshold=self.params.match_threshold,
 						  negative_ratio=negative_ratio,
 						  alpha=alpha,
 						  label_smoothing=label_smoothing,
@@ -166,11 +167,11 @@ def text_net(inputs,
 		# Block 6: let's dilate the hell out of it!
 		net = slim.conv2d(net, 1024, [3, 3], rate=6, scope='conv6')
 		end_points['conv6'] = net
-		net = tf.layers.dropout(net, rate=dropout_keep_prob, training = is_training)
+		#net = tf.layers.dropout(net, rate=dropout_keep_prob, training = is_training)
 		# Block 7: 1x1 conv. Because the fuck.
 		net = slim.conv2d(net, 1024, [1, 1], scope='conv7')
 		end_points['conv7'] = net
-		net = tf.layers.dropout(net, rate=dropout_keep_prob, training = is_training)
+		#net = tf.layers.dropout(net, rate=dropout_keep_prob, training = is_training)
 		# Block 8/9/10/11: 1x1 and 3x3 convolutions stride 2 (except lasts).
 		end_point = 'conv8'
 		with tf.variable_scope(end_point):
@@ -300,7 +301,7 @@ def ssd_arg_scope(weight_decay=0.0005, data_format='NHWC'):
 # =========================================================================== #
 def text_losses(logits, localisations,
 			   glocalisations, gscores,
-			   match_threshold=0.5,
+			   match_threshold=TextboxNet.default_params.match_threshold,
 			   negative_ratio=3.,
 			   alpha=1.,
 			   label_smoothing=0.,

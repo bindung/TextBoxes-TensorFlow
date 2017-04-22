@@ -153,10 +153,10 @@ def bboxes_sort(classes, scores, bboxes, top_k=400):
 def bboxes_clip(bboxes):
     """Clip bounding boxes with respect to reference bbox.
     """
-    bboxes[:,0] = np.maximum(bboxes[:,0], 0)
-    bboxes[:,1] = np.maximum(bboxes[:,1], 0)
-    bboxes[:,2] = np.minimum(bboxes[:,2], 1)
-    bboxes[:,3] = np.minimum(bboxes[:,3], 1)
+    bboxes[:,0] = np.maximum(bboxes[:,0], 0.)
+    bboxes[:,1] = np.maximum(bboxes[:,1], 0.)
+    bboxes[:,2] = np.minimum(bboxes[:,2], 1.0)
+    bboxes[:,3] = np.minimum(bboxes[:,3], 1.0)
     return bboxes
 
 

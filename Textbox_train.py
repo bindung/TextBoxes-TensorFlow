@@ -231,8 +231,8 @@ def main(_):
 			summaries.add(tf.summary.scalar('sparsity/' + end_point,
 											tf.nn.zero_fraction(x)))
 
-		for loss in tf.get_collection(tf.GraphKeys.LOSSES):
-			summaries.add(tf.summary.scalar(loss.op.name, loss))
+		#for loss in tf.get_collection(tf.GraphKeys.LOSSES):
+		#	summaries.add(tf.summary.scalar(loss.op.name, loss))
 
 		for loss in tf.get_collection('EXTRA_LOSSES'):
 			summaries.add(tf.summary.scalar(loss.op.name, loss))

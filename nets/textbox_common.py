@@ -13,7 +13,7 @@ import math
 
 def tf_text_bboxes_encode_layer(bboxes,
                                anchors_layer, num,
-                               matching_threshold=0.5,
+                               match_threshold=0.5,
                                prior_scaling=[0.1, 0.1, 0.2, 0.2],
                                dtype=tf.float32):
     
@@ -104,7 +104,7 @@ def tf_text_bboxes_encode_layer(bboxes,
         jaccard = jaccard_with_anchors(bbox)
         # Mask: check threshold + scores + no annotations + num_classes.
         mask = tf.greater(jaccard, feat_scores)
-        mask = tf.logical_and(mask, tf.greater(jaccard, matching_threshold))
+        mask = tf.logical_and(mask, tf.greater(jaccard, match_threshold))
         #mask = tf.logical_and(mask, feat_scores > -0.5)
         #mask = tf.logical_and(mask, label < num_classes)
         imask = tf.cast(mask, tf.int64)
@@ -161,7 +161,7 @@ def tf_text_bboxes_encode_layer(bboxes,
 
 def tf_text_bboxes_encode(bboxes,
                          anchors, num,
-                         matching_threshold=0.5,
+                         match_threshold=0.5,
                          prior_scaling=[0.1, 0.1, 0.2, 0.2],
                          dtype=tf.float32,
                          scope='text_bboxes_encode'):
@@ -187,7 +187,7 @@ def tf_text_bboxes_encode(bboxes,
             with tf.name_scope('bboxes_encode_block_%i' % i):
                 t_loc, t_scores = \
                     tf_text_bboxes_encode_layer(bboxes, anchors_layer, num,
-                                                matching_threshold,
+                                                match_threshold,
                                                prior_scaling, dtype)
                 target_localizations.append(t_loc)
                 target_scores.append(t_scores)
@@ -227,8 +227,8 @@ def textbox_anchor_one_layer(img_shape,
 
     # 
     num_anchors = 6
-    h = np.zeros((num_anchors, ), dtype=dtype)
-    w = np.zeros((num_anchors, ), dtype=dtype)
+    h = np.zeros((len(ratios), ), dtype=dtype)
+    w = np.zeros((len(ratios), ), dtype=dtype)
     for i ,r in enumerate(ratios):
         h[i] = scale / math.sqrt(r) 
         w[i] = scale * math.sqrt(r) 
