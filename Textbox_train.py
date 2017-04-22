@@ -182,12 +182,13 @@ def main(_):
 	tf.logging.set_verbosity(tf.logging.DEBUG)
 
 	with tf.Graph().as_default():
-		
+		params = txtbox_300.TextboxNet.default_params
+		params = params._replace( match_threshold=FLAGS.match_threshold)
 		# initalize the net
-		net = txtbox_300.TextboxNet()
+		net = txtbox_300.TextboxNet(params)
 		out_shape = net.params.img_shape
 		anchors = net.anchors(out_shape)
-		net.default_params.match_threshold = FLAGS.match_threshold
+
 		# Create global_step.
 		
 		global_step = slim.create_global_step()

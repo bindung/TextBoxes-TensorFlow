@@ -105,7 +105,7 @@ class TextboxNet(object):
 									  0.5,
 									  dtype)
 
-	def bboxes_encode(self, bboxes, anchors, num,
+	def bboxes_encode(self, bboxes, anchors,
 					  scope='text_bboxes_encode'):
 		"""Encode labels and bounding boxes.
 		"""
