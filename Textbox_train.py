@@ -22,7 +22,7 @@ tf.app.flags.DEFINE_float(
 tf.app.flags.DEFINE_float(
 	'negative_ratio', 3., 'Negative ratio in the loss function.')
 tf.app.flags.DEFINE_float(
-	'match_threshold', 0.5, 'Matching threshold in the loss function.')
+	'match_threshold', 0.2, 'Matching threshold in the loss function.')
 tf.app.flags.DEFINE_string(
 	'file_pattern', '*.tfrecord', 'tf_record pattern')
 
@@ -187,7 +187,7 @@ def main(_):
 		net = txtbox_300.TextboxNet()
 		out_shape = net.params.img_shape
 		anchors = net.anchors(out_shape)
-
+		net.default_params.match_threshold = FLAGS.match_threshold
 		# Create global_step.
 		
 		global_step = slim.create_global_step()

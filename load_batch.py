@@ -41,7 +41,7 @@ def get_batch(dataset_dir,
 											out_shape,is_training=is_training)
 
 	glocalisations, gscores = \
-	net.bboxes_encode( gbboxes, anchors, num,match_threshold = 0.5)
+	net.bboxes_encode( gbboxes, anchors, num)
 
 	batch_shape = [1] + [len(anchors)] * 2
 
