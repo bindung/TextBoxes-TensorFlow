@@ -209,29 +209,34 @@ def textbox_anchor_one_layer(img_shape,
                              feat_size,
                              ratios,
                              scale,
+                             sizes,
+                             step,
                              offset = 0.5,
                              dtype=np.float32):
     # Follow the papers scheme
     # 12 ahchor boxes with out sk' = sqrt(sk * sk+1)
-    y, x = np.mgrid[0:feat_size[0], 0:feat_size[1]] + 0.5
+    y, x = np.mgrid[0:feat_size[0], 0:feat_size[1]]
+    y = (y.astype(dtype) + offset) * step / img_shape[0]
+    x = (x.astype(dtype) + offset) * step / img_shape[1]
     y_offset = y + offset
-    y = y.astype(dtype) / feat_size[0]
-    x = x.astype(dtype) / feat_size[1]
     x_offset = x
-    y_offset = y_offset.astype(dtype) / feat_size[1]
     x_out = np.stack((x, x_offset), -1)
     y_out = np.stack((y, y_offset), -1)
     y_out = np.expand_dims(y_out, axis=-1)
     x_out = np.expand_dims(x_out, axis=-1)
 
-
     # 
     num_anchors = 6
-    h = np.zeros((len(ratios), ), dtype=dtype)
-    w = np.zeros((len(ratios), ), dtype=dtype)
-    for i ,r in enumerate(ratios):
-        h[i] = scale / math.sqrt(r) 
-        w[i] = scale * math.sqrt(r) 
+    h = np.zeros((len(ratios)+1, ), dtype=dtype)
+    w = np.zeros((len(ratios)+1, ), dtype=dtype)
+    di = 0
+    if len(sizes) > 1:
+        h[0] = math.sqrt(sizes[0] * sizes[1]) / img_shape[0]
+        w[0] = math.sqrt(sizes[0] * sizes[1]) / img_shape[1]
+        di += 1
+    for i, r in enumerate(ratios):
+        h[i+di] = sizes[0] / img_shape[0] / math.sqrt(r)
+        w[i+di] = sizes[0] / img_shape[1] * math.sqrt(r)
     return y_out, x_out, h, w
 
 
@@ -241,6 +246,8 @@ def textbox_achor_all_layers(img_shape,
                            layers_shape,
                            anchor_ratios,
                            scales,
+                           anchor_sizes,
+                           anchor_steps,
                            offset=0.5,
                            dtype=np.float32):
     """
@@ -251,6 +258,8 @@ def textbox_achor_all_layers(img_shape,
         anchor_bboxes = textbox_anchor_one_layer(img_shape, s,
                                                  anchor_ratios,
                                                  scales[i],
+                                                 anchor_sizes[i],
+                                                 anchor_steps[i],
                                                  offset=offset, dtype=dtype)
         layers_anchors.append(anchor_bboxes)
     return layers_anchors

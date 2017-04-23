@@ -28,7 +28,8 @@ TextboxParams = namedtuple('TextboxParameters',
 										 'anchor_ratios',
 										 'normalizations',
 										 'prior_scaling',
-										 'step',
+										 'anchor_sizes',
+										 'anchor_steps',
 										 'scales',
 										 'match_threshold'
 										 ])
@@ -44,6 +45,12 @@ class TextboxNet(object):
 	  conv7_2 ==> 5 x 5
 	  conv8_2 ==> 3 x 3
 	  pool6 ==> 1 x 1
+	anchor_sizes=[(21., 45.),
+          (45., 99.),
+          (99., 153.),
+          (153., 207.),
+          (207., 261.),
+          (261., 315.)],
 	The default image size used to train this network is 300x300.
 	"""
 	default_params = TextboxParams(
@@ -51,13 +58,20 @@ class TextboxNet(object):
 		num_classes=2,
 		feat_layers=['conv4', 'conv7', 'conv8', 'conv9', 'conv10', 'global'],
 		feat_shapes=[(38, 38), (19, 19), (10, 10), (5, 5), (3, 3), (1, 1)],
-		scale_range=[0.05, 0.85],
+		scale_range=[0.2, 0.95],
 		anchor_ratios=[1,2,3,5,7,10],
 		normalizations=[20, -1, -1, -1, -1, -1],
 		prior_scaling=[0.1, 0.1, 0.2, 0.2],
-		step = 0.14 ,
-		scales = [0.05 + i*0.8/5  for i in range(6)],
-		match_threshold = 0.2
+		anchor_sizes=[(30., 60.),
+                      (60., 114.),
+                      (114., 168.),
+                      (168., 222.),
+                      (222., 276.),
+                      (276., 330.)],
+		anchor_steps=[8, 16, 32, 64, 100, 300],
+		scales = [0.2 + i*0.8/5  for i in range(6)],
+		#scales = [0.05, 0.1,0.15,0.25,0.4,0.65],
+		match_threshold = 0.5
 		)
 
 	def __init__(self, params=None):
@@ -102,6 +116,8 @@ class TextboxNet(object):
 									  self.params.feat_shapes,
 									  self.params.anchor_ratios,
 									  self.params.scales,
+									  self.params.anchor_sizes,
+									  self.params.anchor_steps,
 									  0.5,
 									  dtype)
 
@@ -227,10 +243,10 @@ def text_multibox_layer(layer,
 	if normalization > 0:
 		net = custom_layers.l2_normalization(net, scaling=True)
 	# Number of anchors.
-	num_anchors = 6
+	num_box = len(TextboxNet.default_params.anchor_ratios)+1
 	num_classes = 2
 	# Location.
-	num_loc_pred = 2*num_anchors * 4
+	num_loc_pred = 2*num_box * 4
 	if(layer == 'global'):
 		loc_pred = slim.conv2d(net, num_loc_pred, [1, 1], activation_fn=None, padding = 'VALID',
 						   scope='conv_loc')
@@ -238,9 +254,9 @@ def text_multibox_layer(layer,
 		loc_pred = slim.conv2d(net, num_loc_pred, [1, 5], activation_fn=None, padding = 'SAME',
 						   scope='conv_loc')
 	#loc_pred = custom_layers.channel_to_last(loc_pred)
-	loc_pred = tf.reshape(loc_pred, loc_pred.get_shape().as_list()[:-1] + [2,num_anchors,4])
+	loc_pred = tf.reshape(loc_pred, loc_pred.get_shape().as_list()[:-1] + [2,num_box,4])
 	# Class prediction.
-	scores_pred = 2 * num_anchors * num_classes
+	scores_pred = 2 * num_box * num_classes
 	if(layer == 'global'):
 		sco_pred = slim.conv2d(net, scores_pred, [1, 1], activation_fn=None, padding = 'VALID',
 						   scope='conv_cls')
@@ -248,7 +264,7 @@ def text_multibox_layer(layer,
 		sco_pred = slim.conv2d(net, scores_pred, [1, 5], activation_fn=None, padding = 'SAME',
 						   scope='conv_cls')
 	#cls_pred = custom_layers.channel_to_last(cls_pred)
-	sco_pred = tf.reshape(sco_pred, tensor_shape(sco_pred, 4)[:-1] + [2,num_anchors,num_classes])
+	sco_pred = tf.reshape(sco_pred, tensor_shape(sco_pred, 4)[:-1] + [2,num_box,num_classes])
 	return sco_pred, loc_pred
 
 
