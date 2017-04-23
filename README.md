@@ -53,11 +53,11 @@ cd datasets
 ```
 Generate tfrecord for test set:
 ```bash
-python ICDAR2013ToRecord.py --ground_truth_path_test=../data/ICDAR2013/ICDAR-Test-GT/
+python ICDAR2013ToRecord.py --dataset=test --ground_truth_path_test=../data/ICDAR2013/ICDAR-Test-GT/
 ```
 Generate tfrecord for training set:
 ```bash
-python ICDAR2013ToRecord.py --ground_truth_path_train=../data/ICDAR2013/ICDAR-Training-GT/
+python ICDAR2013ToRecord.py --dataset=train --ground_truth_path_train=../data/ICDAR2013/ICDAR-Training-GT/
 ```
 The generated tfrecords are in TextBoxes-TensorFlow/data/ICDAR2013 folder.
 
