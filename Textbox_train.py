@@ -249,7 +249,7 @@ def main(_):
 			summaries.add(tf.summary.scalar('learning_rate', learning_rate))
 
 			## Training 
-
+			total_loss = clone_losses = tf.get_collection(tf.GraphKeys.LOSSES)
 			train_op = slim.learning.create_train_op(total_loss, optimizer)
 
 		# =================================================================== #
