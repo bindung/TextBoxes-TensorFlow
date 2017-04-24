@@ -299,8 +299,8 @@ def ssd_arg_scope(weight_decay=0.0005, data_format='NHWC'):
 	with slim.arg_scope([slim.conv2d, slim.fully_connected],
 						activation_fn=tf.nn.relu,
 						weights_regularizer=slim.l2_regularizer(weight_decay),
-						#weights_initializer=tf.random_normal_initializer(),
-						weights_initializer=tf.contrib.layers.xavier_initializer(),
+						weights_initializer=tf.random_normal_initializer(),
+						#weights_initializer=tf.contrib.layers.xavier_initializer(),
 						biases_initializer=tf.zeros_initializer()):
 		with slim.arg_scope([slim.conv2d, slim.max_pool2d],
 							padding='SAME',
@@ -360,6 +360,7 @@ def text_losses(logits, localisations,
 					#loss = alpha*tf.reduce_mean(loss)
 					loss = tf.losses.compute_weighted_loss(loss, fpmask)
 					l_cross_pos.append(loss)
+					tf.losses.add_loss(loss)
 
 				with tf.name_scope('cross_entropy_neg'):
 					loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=-logits[i],labels=inmask)
@@ -373,7 +374,7 @@ def text_losses(logits, localisations,
 					#loss = tf.square(fnmask*(logits[i][:,:,:,:,:,0] - fnmask))
 					#loss = alpha*tf.reduce_mean(loss)
 					l_cross_neg.append(loss)
-
+					tf.losses.add_loss(loss)
 				# Add localization loss: smooth L1, L2, ...
 				with tf.name_scope('localization'):
 					# Weights Tensor: positive mask + random negative.
@@ -381,7 +382,7 @@ def text_losses(logits, localisations,
 					loss = custom_layers.abs_smooth(localisations[i] - glocalisations[i])
 					loss = tf.losses.compute_weighted_loss(loss, weights)
 					l_loc.append(loss)
-				
+					tf.losses.add_loss(loss)
 		# Additional total losses...
 		with tf.name_scope('total'):
 			total_cross_pos = tf.add_n(l_cross_pos, 'cross_entropy_pos')
