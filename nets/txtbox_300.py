@@ -243,7 +243,7 @@ def text_multibox_layer(layer,
 	if normalization > 0:
 		net = custom_layers.l2_normalization(net, scaling=True)
 	# Number of anchors.
-	num_box = len(TextboxNet.default_params.anchor_ratios)+1
+	num_box = len(TextboxNet.default_params.anchor_ratios) + 1
 	num_classes = 2
 	# Location.
 	num_loc_pred = 2*num_box * 4
@@ -299,7 +299,8 @@ def ssd_arg_scope(weight_decay=0.0005, data_format='NHWC'):
 	with slim.arg_scope([slim.conv2d, slim.fully_connected],
 						activation_fn=tf.nn.relu,
 						weights_regularizer=slim.l2_regularizer(weight_decay),
-						weights_initializer=tf.contrib.layers.variance_scaling_initializer(factor=1.0,mode='FAN_IN',uniform=True),
+						weights_initializer=tf.random_normal_initializer(),
+						#weights_initializer=tf.contrib.layers.xavier_initializer(),
 						biases_initializer=tf.zeros_initializer()):
 		with slim.arg_scope([slim.conv2d, slim.max_pool2d],
 							padding='SAME',
@@ -342,26 +343,32 @@ def text_losses(logits, localisations,
 			with tf.name_scope('block_%i' % i):
 				pmask = gscores[i] > match_threshold
 				ipmask = tf.cast(pmask, tf.int32)
-				n_pos = tf.reduce_sum(ipmask)
+				n_pos = tf.reduce_sum(ipmask) + 1
 				fpmask = tf.cast(pmask, tf.float32)
 				nmask = gscores[i] < match_threshold
 				inmask = tf.cast(nmask, tf.int32)
 				fnmask = tf.cast(nmask, tf.float32)
 				num = tf.ones_like(gscores[i])
-				n = tf.reduce_sum(num) + 1e-5
+				n = tf.reduce_sum(num)
 				n_poses.append(n_pos)
 
 				
 				# Add cross-entropy loss.
 				with tf.name_scope('cross_entropy_pos'):
 					loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits[i],labels=ipmask)
-					loss = tf.losses.compute_weighted_loss(loss, fpmask)
 					#loss = tf.square(fpmask*(logits[i][:,:,:,:,:,1] - fpmask))
 					#loss = alpha*tf.reduce_mean(loss)
+					loss = tf.losses.compute_weighted_loss(loss, fpmask)
 					l_cross_pos.append(loss)
 
 				with tf.name_scope('cross_entropy_neg'):
 					loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=-logits[i],labels=inmask)
+					loss_neg_flat = tf.reshape(loss, [-1])
+					n_neg = tf.minimum(tf.size(loss_neg_flat)/2, 3*n_pos)
+					val, idxes = tf.nn.top_k(loss_neg_flat, k=n_neg)
+					minval = val[-1]
+					nmask = tf.logical_and(nmask, loss > minval)
+					fnmask = tf.cast(nmask, tf.float32)
 					loss = tf.losses.compute_weighted_loss(loss, fnmask)
 					#loss = tf.square(fnmask*(logits[i][:,:,:,:,:,0] - fnmask))
 					#loss = alpha*tf.reduce_mean(loss)

@@ -227,6 +227,8 @@ def textbox_anchor_one_layer(img_shape,
 
     # 
     num_anchors = 6
+
+
     h = np.zeros((len(ratios)+1, ), dtype=dtype)
     w = np.zeros((len(ratios)+1, ), dtype=dtype)
     di = 0
@@ -234,6 +236,7 @@ def textbox_anchor_one_layer(img_shape,
         h[0] = math.sqrt(sizes[0] * sizes[1]) / img_shape[0]
         w[0] = math.sqrt(sizes[0] * sizes[1]) / img_shape[1]
         di += 1
+
     for i, r in enumerate(ratios):
         h[i+di] = sizes[0] / img_shape[0] / math.sqrt(r)
         w[i+di] = sizes[0] / img_shape[1] * math.sqrt(r)
