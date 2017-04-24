@@ -40,7 +40,7 @@ _B_MEAN = 104.
 
 # Some training pre-processing parameters.
 BBOX_CROP_OVERLAP = 0.5       # Minimum overlap to keep a bbox after cropping.
-CROP_RATIO_RANGE = (0.6, 1.6)  # Distortion ratio during cropping.
+CROP_RATIO_RANGE = (0.9, 1.1)  # Distortion ratio during cropping.
 EVAL_SIZE = (300, 300)
 
 
@@ -49,7 +49,7 @@ def distorted_bounding_box_crop(image,
                                 labels,
                                 bboxes,
                                 min_object_covered=0.5,
-                                aspect_ratio_range=(0.5, 1.6),
+                                aspect_ratio_range=(0.9, 1.1),
                                 area_range=(0.1, 1.0),
                                 max_attempts=200,
                                 scope=None):
