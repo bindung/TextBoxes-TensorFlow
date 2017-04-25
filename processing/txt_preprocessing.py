@@ -119,8 +119,8 @@ def preprocess_for_train(image, labels, bboxes,
         if image.dtype != tf.float32:
             image = tf.image.convert_image_dtype(image, dtype=tf.float32)
         num = tf.reduce_sum(tf.cast(labels, tf.int32))
-        bboxes = tf.minimum(bboxes, 0.9999)
-        bboxes = tf.maximum(bboxes, 0.0001)
+        bboxes = tf.minimum(bboxes, 1.0)
+        bboxes = tf.maximum(bboxes, 0.0)
     
         # Distort image and bounding boxes.
 
@@ -153,12 +153,14 @@ def preprocess_for_train(image, labels, bboxes,
                 lambda x, ordering: tf_image.distort_color_2(x, ordering, True),
                 num_cases=4)
         
-        
-        
         # Rescale to normal range
-        image = dst_image * 255.
+        #image = tf.cast(dst_image, tf.uint8)
+        #image = tf.image.convert_image_dtype(image, dtype=tf.float32) 
+        #image = tf.nn.sigmoid(dst_image) * 255
+        #image = dst_image
+        #image = tf_image.tf_image_whitened(image, [_R_MEAN, _G_MEAN, _B_MEAN])
+        image = (dst_image - tf.reduce_min(dst_image))/ (tf.reduce_max(dst_image) - tf.reduce_min(dst_image)) * 255.0
         image.set_shape([out_shape[0], out_shape[1], 3])
-        image = tf_image.tf_image_whitened(image, [_R_MEAN, _G_MEAN, _B_MEAN])
         tf_image.tf_summary_image(image, bboxes, 'image_color_distorted')
         #dst_image = tf.cast(dst_image,tf.float32)
         return image, labels, bboxes,num
