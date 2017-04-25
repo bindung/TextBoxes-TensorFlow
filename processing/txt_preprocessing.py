@@ -157,9 +157,9 @@ def preprocess_for_train(image, labels, bboxes,
         #image = tf.cast(dst_image, tf.uint8)
         #image = tf.image.convert_image_dtype(image, dtype=tf.float32) 
         #image = tf.nn.sigmoid(dst_image) * 255
-        #image = dst_image
-        #image = tf_image.tf_image_whitened(image, [_R_MEAN, _G_MEAN, _B_MEAN])
-        image = (dst_image - tf.reduce_min(dst_image))/ (tf.reduce_max(dst_image) - tf.reduce_min(dst_image)) * 255.0
+        image = dst_image * 255.0
+        image = tf_image.tf_image_whitened(image, [_R_MEAN, _G_MEAN, _B_MEAN])
+        #image = (dst_image - tf.reduce_min(dst_image))/ (tf.reduce_max(dst_image) - tf.reduce_min(dst_image)) * 255.0
         image.set_shape([out_shape[0], out_shape[1], 3])
         tf_image.tf_summary_image(image, bboxes, 'image_color_distorted')
         #dst_image = tf.cast(dst_image,tf.float32)
