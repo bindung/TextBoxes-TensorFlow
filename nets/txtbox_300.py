@@ -69,12 +69,12 @@ class TextboxNet(object):
 		anchor_ratios=[1,2,3,5,7,10],
 		normalizations=[20, -1, -1, -1, -1, -1],
 		prior_scaling=[0.1, 0.1, 0.2, 0.2],
-		anchor_sizes=[(30., 60.),
-		              (60., 114.),
-		              (114., 168.),
-		              (168., 222.),
-		              (222., 276.),
-		              (276., 330.)],
+		anchor_sizes=[(21., 45.),
+			          (45., 99.),
+			          (99., 153.),
+			          (153., 207.),
+			          (207., 261.),
+			          (261., 315.)],
 		anchor_steps=[8, 16, 30, 60, 100, 300],
 		scales = [0.2 + i*0.8/5  for i in range(6)],
 		#scales = [0.05, 0.1,0.15,0.25,0.4,0.65],
@@ -250,7 +250,7 @@ def text_multibox_layer(layer,
 	if normalization > 0:
 		net = custom_layers.l2_normalization(net, scaling=True)
 	# Number of anchors.
-	num_box = len(TextboxNet.default_params.anchor_ratios) + 1
+	num_box = len(TextboxNet.default_params.anchor_ratios)
 	num_classes = 2
 	# Location.
 	num_loc_pred = 2*num_box * 4
@@ -365,10 +365,10 @@ def text_losses(logits, localisations,
 					loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits[i],labels=ipmask)
 					#loss = tf.square(fpmask*(logits[i][:,:,:,:,:,1] - fpmask))
 					#loss = alpha*tf.reduce_mean(loss)
-					loss = tf.losses.compute_weighted_loss(loss, fpmask)
+					#loss = tf.losses.compute_weighted_loss(loss, fpmask)
+					loss = tf.reduce_mean(loss)
 					l_cross_pos.append(loss)
-					#tf.losses.add_loss(loss)
-
+				
 				with tf.name_scope('cross_entropy_neg'):
 					loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=-logits[i],labels=inmask)
 					loss_neg_flat = tf.reshape(loss, [-1])
@@ -404,7 +404,7 @@ def text_losses(logits, localisations,
 			tf.add_to_collection('EXTRA_LOSSES', total_cross)
 			tf.add_to_collection('EXTRA_LOSSES', total_loc)
 
-			total_loss = tf.add(total_loc, total_cross, 'total_loss')
+			total_loss = tf.add(total_loc, total_cross_pos, 'total_loss')
 			tf.add_to_collection('EXTRA_LOSSES', total_loss)
 		
 		return total_loss

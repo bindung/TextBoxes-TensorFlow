@@ -216,8 +216,8 @@ def textbox_anchor_one_layer(img_shape,
     # Follow the papers scheme
     # 12 ahchor boxes with out sk' = sqrt(sk * sk+1)
     y, x = np.mgrid[0:feat_size[0], 0:feat_size[1]]
-    y = (y.astype(dtype) + offset) * step / img_shape[0]
-    x = (x.astype(dtype) + offset) * step / img_shape[1]
+    y = (y.astype(dtype) + offset) / feat_size[0]
+    x = (x.astype(dtype) + offset) / feat_size[1]
     y_offset = y + offset
     x_offset = x
     x_out = np.stack((x, x_offset), -1)
@@ -229,14 +229,14 @@ def textbox_anchor_one_layer(img_shape,
     num_anchors = 6
 
 
-    h = np.zeros((len(ratios)+1, ), dtype=dtype)
-    w = np.zeros((len(ratios)+1, ), dtype=dtype)
+    h = np.zeros((len(ratios), ), dtype=dtype)
+    w = np.zeros((len(ratios), ), dtype=dtype)
     di = 0
     if len(sizes) > 1:
         h[0] = math.sqrt(sizes[0] * sizes[1]) / img_shape[0]
         w[0] = math.sqrt(sizes[0] * sizes[1]) / img_shape[1]
         di += 1
-
+    di = 0
     for i, r in enumerate(ratios):
         h[i+di] = sizes[0] / img_shape[0] / math.sqrt(r)
         w[i+di] = sizes[0] / img_shape[1] * math.sqrt(r)
