@@ -232,6 +232,7 @@ def preprocess_for_eval(image, labels, bboxes,
             labels = tf.boolean_mask(labels, mask)
             bboxes = tf.boolean_mask(bboxes, mask)
         # Image data format.
+        image = tf_image.tf_image_whitened(image, [_R_MEAN, _G_MEAN, _B_MEAN])
         return image, labels, bboxes, bbox_img
 
 def preprocess_image(image,
