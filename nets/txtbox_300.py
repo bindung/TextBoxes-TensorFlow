@@ -406,7 +406,7 @@ def text_losses(logits, localisations,
 			tf.add_to_collection('EXTRA_LOSSES', total_cross)
 			tf.add_to_collection('EXTRA_LOSSES', total_loc)
 
-			total_loss = tf.add(total_loc, total_cross_pos, 'total_loss')
+			total_loss = tf.add(total_loc, total_cross, 'total_loss')
 			tf.add_to_collection('EXTRA_LOSSES', total_loss)
 		
 		return total_loss
