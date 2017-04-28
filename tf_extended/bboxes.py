@@ -402,7 +402,7 @@ def bboxes_filter_center(labels, bboxes, margins=[0., 0., 0., 0.],
         return labels, bboxes
 
 
-def bboxes_filter_overlap(labels, bboxes, threshold=0.5,
+def bboxes_filter_overlap(labels, bboxes, threshold=0.1,
                           scope=None):
     """Filter out bounding boxes based on overlap with reference
     box [0, 0, 1, 1].
