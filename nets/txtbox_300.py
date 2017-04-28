@@ -420,7 +420,7 @@ def text_losses(logits, localisations,
 		with tf.name_scope('total'):
 			total_cross_pos = tf.add_n(l_cross_pos, 'cross_entropy_pos')
 			total_cross_neg = tf.add_n(l_cross_neg, 'cross_entropy_neg')
-			total_cross = tf.add(total_cross_pos, total_cross, 'cross_entropy')
+			total_cross = tf.add(total_cross_pos, total_cross_neg, 'cross_entropy')
 			total_loc = tf.add_n(l_loc, 'localization')
 			numofpositive = tf.add_n(n_poses, 'numofpositive')
 			# Add to EXTRA LOSSES TF.collection
@@ -430,7 +430,7 @@ def text_losses(logits, localisations,
 			tf.add_to_collection('EXTRA_LOSSES', total_cross)
 			tf.add_to_collection('EXTRA_LOSSES', total_loc)
 
-			total_loss = tf.add(total_loc, total_cross_pos, 'total_loss')
+			total_loss = tf.add(total_loc, total_cross, 'total_loss')
 			tf.add_to_collection('EXTRA_LOSSES', total_loss)
 		
 		return total_loss
