@@ -62,7 +62,7 @@ tf.app.flags.DEFINE_float(
 # Optimization Flags.
 # =========================================================================== #
 tf.app.flags.DEFINE_float(
-	'weight_decay', 0.00004, 'The weight decay on the model weights.')
+	'weight_decay', 0.00004, 'The weight decay on the model weights_1.')
 tf.app.flags.DEFINE_string(
 	'optimizer', 'rmsprop',
 	'The name of the optimizer, one of "adadelta", "adagrad", "adam",'
@@ -240,6 +240,74 @@ def main(_):
 		for variable in slim.get_model_variables():
 			summaries.add(tf.summary.histogram(variable.op.name, variable))
 
+		gradient_multipliers = {
+    		'conv1/conv1_1/weights_1' : 1.,
+    		'conv1/conv1_1/biases_1' : 1.,
+    		'conv1/conv1_2/weights_1' : 1.,
+    		'conv1/conv1_2/biases_1' : 1.,
+    		'conv2/conv2_1/weights_1' : 1.,
+    		'conv2/conv2_1/biases_1' : 1.,
+    		'conv2/conv2_2/weights_1' : 1.,
+    		'conv2/conv2_2/biases_1' : 1.,
+    		'conv3/conv3_1/weights_1' : 1.,
+    		'conv3/conv3_1/biases_1' : 2.,
+   			'conv3/conv3_2/weights_1' : 1.,
+    		'conv3/conv3_2/biases_1' : 2.,
+    		'conv4/conv4_1/weights_1' : 1.,
+    		'conv4/conv4_1/biases_1' : 2.,
+    		'conv4/conv4_2/weights_1' : 1.,
+    		'conv4/conv4_2/biases_1' : 2.,
+    		'conv4/conv4_3/weights_1' : 1.,
+    		'conv4/conv4_3/biases_1' : 2.,
+    		'conv5/conv5_1/weights_1' : 1.,
+    		'conv5/conv5_1/biases_1' : 2.,
+    		'conv5/conv5_2/weights_1' : 1.,
+    		'conv5/conv5_2/biases_1' : 2.,
+    		'conv5/conv5_3/weights_1' : 1.,
+    		'conv5/conv5_3/biases_1' : 2.,
+    		'conv6/weights_1' : 1.,
+    		'conv6/biases_1' : 2.,
+    		'conv7/weights_1' : 1.,
+    		'conv7/biases_1' : 2.,
+    		'conv8/conv1x1/weights_1' :1.,
+    		'conv8/conv1x1/biases_1' :2.,
+    		'conv8/conv3x3/weights_1' :1.,
+    		'conv8/conv3x3/biases_1' :2.,
+    		'conv9/conv1x1/weights_1' :1.,
+    		'conv9/conv1x1/biases_1' :2.,
+    		'conv9/conv3x3/weights_1' :1.,
+    		'conv9/conv3x3/biases_1' :2.,
+    		'conv10/conv1x1/weights_1' :1.,
+    		'conv10/conv1x1/biases_1' :2.,
+    		'conv10/conv3x3/weights_1' :1.,
+    		'conv10/conv3x3/biases_1' :2.,
+    		'global/pool6/weights_1' :1.,
+    		'global/pool6/biases_1' :2.,
+    		'conv4_box/conv_cls/weights_1': 1.,
+    		'conv4_box/conv_cls/biases_1': 2.,
+    		'conv4_box/conv_loc/weights_1': 1.,
+    		'conv4_box/conv_loc/biases_1': 2.,
+    		'conv7_box/conv_loc/weights_1': 1.,
+    		'conv7_box/conv_loc/biases_1': 2.,
+    		'conv7_box/conv_cls/weights_1': 1.,
+    		'conv7_box/conv_cls/biases_1': 2.,
+    		'conv8_box/conv_loc/weights_1': 1.,
+    		'conv8_box/conv_loc/biases_1': 2.,
+    		'conv8_box/conv_cls/weights_1': 1.,
+    		'conv8_box/conv_cls/biases_1': 2.,
+    		'conv9_box/conv_loc/weights_1': 1.,
+    		'conv9_box/conv_loc/biases_1': 2.,
+    		'conv9_box/conv_cls/weights_1': 1.,
+    		'conv9_box/conv_cls/biases_1': 2.,
+    		'conv10_box/conv_cls/weights_1': 1.,
+    		'conv10_box/conv_cls/biases_1': 2.,
+    		'conv10_box/conv_loc/weights_1': 1.,
+    		'conv10_box/conv_loc/biases_1': 2.,
+    		'global_box/conv_cls/weights_1': 1.,
+    		'global_box/conv_cls/biases_1': 2.,
+    		'global_box/conv_loc/weights_1': 1.,
+    		'global_box/conv_loc/biases_1': 2.
+  		}
 		with tf.device(FLAGS.gpu_train):
 			learning_rate = tf_utils.configure_learning_rate(FLAGS,
 															 FLAGS.num_samples,
@@ -251,7 +319,7 @@ def main(_):
 			## Training 
 			#loss = tf.get_collection(tf.GraphKeys.LOSSES)
 			#total_loss = tf.add_n(loss)
-			train_op = slim.learning.create_train_op(total_loss, optimizer)
+			train_op = slim.learning.create_train_op(total_loss, optimizer, gradient_multipliers=gradient_multipliers)
 
 		# =================================================================== #
 		# Kicks off the training.
@@ -264,6 +332,8 @@ def main(_):
 							   keep_checkpoint_every_n_hours=1.0,
 							   write_version=2,
 							   pad_step_number=False)
+
+
 		slim.learning.train(
 			train_op,
 			logdir=FLAGS.train_dir,
@@ -278,16 +348,6 @@ def main(_):
 			session_config=config,
 			sync_optimizer=None)
 
-		'''
-		# for test0
-		with tf.Session() as sess: 
-			sess.run(tf.global_variables_initializer())
-			with slim.queues.QueueRunners(sess):
-				imgs = sess.run(b_image)
-				loss_ = sess.run(total_loss)
-				print loss_
-
-		'''
 if __name__ == '__main__':
 	tf.app.run()
 

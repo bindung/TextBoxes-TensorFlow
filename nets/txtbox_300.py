@@ -215,8 +215,9 @@ def text_net(inputs,
 		end_points[end_point] = net
 		end_point = 'global'
 		with tf.variable_scope(end_point):
-			net = slim.conv2d(net, 128, [1, 1], scope='conv1x1')
-			net = slim.conv2d(net, 256, [3, 3], scope='conv3x3', padding='VALID')
+			net = slim.avg_pool2d(net, [3,3], scope='pool6', padding = 'VALID')
+			#net = slim.conv2d(net, 128, [1, 1], scope='conv1x1')
+			#net = slim.conv2d(net, 256, [3, 3], scope='conv3x3', padding='VALID')
 		end_points[end_point] = net
 
 		# Prediction and localisations layers.
@@ -254,23 +255,31 @@ def text_multibox_layer(layer,
 	num_classes = 2
 	# Location.
 	num_loc_pred = 2*num_box * 4
+	'''
 	if(layer == 'global'):
 		loc_pred = slim.conv2d(net, num_loc_pred, [1, 1], activation_fn=None, padding = 'VALID',
 						   scope='conv_loc')
 	else:
 		loc_pred = slim.conv2d(net, num_loc_pred, [1, 5], activation_fn=None, padding = 'SAME',
 						   scope='conv_loc')
-	#loc_pred = custom_layers.channel_to_last(loc_pred)
+	'''
+	loc_pred = slim.conv2d(net, num_loc_pred, [1, 5], activation_fn=None, padding = 'SAME',
+						   scope='conv_loc')
+	loc_pred = custom_layers.channel_to_last(loc_pred)
 	loc_pred = tf.reshape(loc_pred, loc_pred.get_shape().as_list()[:-1] + [2,num_box,4])
 	# Class prediction.
 	scores_pred = 2 * num_box * num_classes
+	'''
 	if(layer == 'global'):
 		sco_pred = slim.conv2d(net, scores_pred, [1, 1], activation_fn=None, padding = 'VALID',
 						   scope='conv_cls')
 	else:
 		sco_pred = slim.conv2d(net, scores_pred, [1, 5], activation_fn=None, padding = 'SAME',
 						   scope='conv_cls')
-	#cls_pred = custom_layers.channel_to_last(cls_pred)
+	'''
+	sco_pred = slim.conv2d(net, scores_pred, [1, 5], activation_fn=None, padding = 'SAME',
+						   scope='conv_cls')
+	sco_pred = custom_layers.channel_to_last(sco_pred)
 	sco_pred = tf.reshape(sco_pred, tensor_shape(sco_pred, 4)[:-1] + [2,num_box,num_classes])
 	return sco_pred, loc_pred
 
@@ -360,15 +369,7 @@ def text_losses(logits, localisations,
 				n_poses.append(n_pos)
 
 				
-				# Add cross-entropy loss.
-				with tf.name_scope('cross_entropy_pos'):
-					loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits[i],labels=ipmask)
-					#loss = tf.square(fpmask*(logits[i][:,:,:,:,:,1] - fpmask))
-					#loss = alpha*tf.reduce_mean(loss)
-					loss = tf.losses.compute_weighted_loss(loss, fpmask)
-					#loss = tf.reduce_mean(loss)
-					l_cross_pos.append(loss)
-				
+
 				with tf.name_scope('cross_entropy_neg'):
 					loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=-logits[i],labels=inmask)
 					'''
@@ -383,6 +384,26 @@ def text_losses(logits, localisations,
 					#loss = tf.square(fnmask*(logits[i][:,:,:,:,:,0] - fnmask))
 					#loss = alpha*tf.reduce_mean(loss)
 					l_cross_neg.append(loss)
+				# Add cross-entropy loss.
+				with tf.name_scope('cross_entropy_pos'):
+					loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits[i],labels=ipmask)
+					#loss = tf.square(fpmask*(logits[i][:,:,:,:,:,1] - fpmask))
+					#loss = alpha*tf.reduce_mean(loss)
+					loss_neg = tf.where(pmask,
+										   tf.cast(tf.zeros_like(ipmask),tf.float32),
+										   loss)
+					loss_neg_flat = tf.reshape(loss_neg, [-1])
+					n_neg = tf.minimum(3*n_pos, tf.cast(n,tf.int32))
+					val, idxes = tf.nn.top_k(loss_neg_flat, k=n_neg)
+					minval = val[-1]
+					nmask = tf.logical_and(nmask, loss > minval)
+					mask = tf.logical_or(nmask, pmask)
+					fmask = tf.cast(mask, tf.float32)
+					loss = tf.losses.compute_weighted_loss(loss, fmask)
+					#loss = tf.reduce_mean(loss)
+					l_cross_pos.append(loss)
+				
+
 					#tf.losses.add_loss(loss)
 				# Add localization loss: smooth L1, L2, ...
 				with tf.name_scope('localization'):
@@ -406,7 +427,7 @@ def text_losses(logits, localisations,
 			tf.add_to_collection('EXTRA_LOSSES', total_cross)
 			tf.add_to_collection('EXTRA_LOSSES', total_loc)
 
-			total_loss = tf.add(total_loc, total_cross, 'total_loss')
+			total_loss = tf.add(total_loc, total_cross_pos, 'total_loss')
 			tf.add_to_collection('EXTRA_LOSSES', total_loss)
 		
 		return total_loss
