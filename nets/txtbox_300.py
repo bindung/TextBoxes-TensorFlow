@@ -255,21 +255,21 @@ def text_multibox_layer(layer,
 	num_classes = 2
 	# Location.
 	num_loc_pred = 2*num_box * 4
-	'''
+	
 	if(layer == 'global'):
 		loc_pred = slim.conv2d(net, num_loc_pred, [1, 1], activation_fn=None, padding = 'VALID',
 						   scope='conv_loc')
 	else:
 		loc_pred = slim.conv2d(net, num_loc_pred, [1, 5], activation_fn=None, padding = 'SAME',
 						   scope='conv_loc')
-	'''
-	loc_pred = slim.conv2d(net, num_loc_pred, [1, 5], activation_fn=None, padding = 'SAME',
-						   scope='conv_loc')
+	
+	#loc_pred = slim.conv2d(net, num_loc_pred, [1, 5], activation_fn=None, padding = 'SAME',
+	#					   scope='conv_loc')
 	loc_pred = custom_layers.channel_to_last(loc_pred)
 	loc_pred = tf.reshape(loc_pred, loc_pred.get_shape().as_list()[:-1] + [2,num_box,4])
 	# Class prediction.
 	scores_pred = 2 * num_box * num_classes
-	'''
+	
 	if(layer == 'global'):
 		sco_pred = slim.conv2d(net, scores_pred, [1, 1], activation_fn=None, padding = 'VALID',
 						   scope='conv_cls')
@@ -279,6 +279,7 @@ def text_multibox_layer(layer,
 	'''
 	sco_pred = slim.conv2d(net, scores_pred, [1, 5], activation_fn=None, padding = 'SAME',
 						   scope='conv_cls')
+	'''
 	sco_pred = custom_layers.channel_to_last(sco_pred)
 	sco_pred = tf.reshape(sco_pred, tensor_shape(sco_pred, 4)[:-1] + [2,num_box,num_classes])
 	return sco_pred, loc_pred
@@ -371,7 +372,7 @@ def text_losses(logits, localisations,
 				
 
 				with tf.name_scope('cross_entropy_neg'):
-					loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=-logits[i],labels=inmask)
+					loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits[i],labels=ipmask)
 					'''
 					loss_neg_flat = tf.reshape(loss, [-1])
 					n_neg = tf.minimum(tf.size(loss_neg_flat)/2, 3*n_pos)
@@ -389,6 +390,7 @@ def text_losses(logits, localisations,
 					loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits[i],labels=ipmask)
 					#loss = tf.square(fpmask*(logits[i][:,:,:,:,:,1] - fpmask))
 					#loss = alpha*tf.reduce_mean(loss)
+					'''
 					loss_neg = tf.where(pmask,
 										   tf.cast(tf.zeros_like(ipmask),tf.float32),
 										   loss)
@@ -399,7 +401,8 @@ def text_losses(logits, localisations,
 					nmask = tf.logical_and(nmask, loss > minval)
 					mask = tf.logical_or(nmask, pmask)
 					fmask = tf.cast(mask, tf.float32)
-					loss = tf.losses.compute_weighted_loss(loss, fmask)
+					'''
+					loss = tf.losses.compute_weighted_loss(loss, fpmask)
 					#loss = tf.reduce_mean(loss)
 					l_cross_pos.append(loss)
 				

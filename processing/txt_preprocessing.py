@@ -162,6 +162,8 @@ def preprocess_for_train(image, labels, bboxes,
         #image = (dst_image - tf.reduce_min(dst_image))/ (tf.reduce_max(dst_image) - tf.reduce_min(dst_image)) * 255.0
         image.set_shape([out_shape[0], out_shape[1], 3])
         tf_image.tf_summary_image(image, bboxes, 'image_color_distorted')
+        bboxes = tf.minimum(bboxes, 1.0)
+        bboxes = tf.maximum(bboxes, 0.0)
         #dst_image = tf.cast(dst_image,tf.float32)
         return image, labels, bboxes,num
 
