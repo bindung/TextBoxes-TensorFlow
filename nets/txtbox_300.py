@@ -78,7 +78,7 @@ class TextboxNet(object):
 		anchor_steps=[8, 16, 30, 60, 100, 300],
 		scales = [0.2 + i*0.8/5  for i in range(6)],
 		#scales = [0.05, 0.1,0.15,0.25,0.4,0.65],
-		match_threshold = 0.5
+		match_threshold = 0.9
 		)
 
 	def __init__(self, params=None):
@@ -167,32 +167,39 @@ def text_net(inputs,
 	with tf.variable_scope(scope, 'text_box_300', [inputs], reuse=reuse):
 		# Original VGG-16 blocks.
 		net = slim.repeat(inputs, 2, slim.conv2d, 64, [3, 3], scope='conv1')
+		net = slim.batch_norm(net)
 		end_points['conv1'] = net
 		net = slim.max_pool2d(net, [2, 2], scope='pool1')
 		# Block 2.
 		net = slim.repeat(net, 2, slim.conv2d, 128, [3, 3], scope='conv2')
+		net = slim.batch_norm(net)
 		end_points['conv2'] = net # 150,150 128
 		net = slim.max_pool2d(net, [2, 2], scope='pool2')
 		# Block 3. # 75 75 256
 		net = slim.repeat(net, 3, slim.conv2d, 256, [3, 3], scope='conv3')
+		net = slim.batch_norm(net)
 		end_points['conv3'] = net
 		net = slim.max_pool2d(net, [2, 2], scope='pool3',padding='SAME')
 		# Block 4. # 38 38 512
 		net = slim.repeat(net, 3, slim.conv2d, 512, [3, 3], scope='conv4')
+		net = slim.batch_norm(net)
 		end_points['conv4'] = net
 		net = slim.max_pool2d(net, [2, 2], scope='pool4')
 		# Block 5. # 19 19 512
 		net = slim.repeat(net, 3, slim.conv2d, 512, [3, 3], scope='conv5')
+		net = slim.batch_norm(net)
 		end_points['conv5'] = net
 		net = slim.max_pool2d(net, [3, 3], stride=1, scope='pool5',padding='SAME')
 
 		# Additional SSD blocks.
 		# Block 6: let's dilate the hell out of it!
 		net = slim.conv2d(net, 1024, [3, 3], rate=6, scope='conv6')
+		net = slim.batch_norm(net)
 		end_points['conv6'] = net
 		#net = tf.layers.dropout(net, rate=dropout_keep_prob, training = is_training)
 		# Block 7: 1x1 conv. Because the fuck.
 		net = slim.conv2d(net, 1024, [1, 1], scope='conv7')
+		net = slim.batch_norm(net)
 		end_points['conv7'] = net
 		#net = tf.layers.dropout(net, rate=dropout_keep_prob, training = is_training)
 		# Block 8/9/10/11: 1x1 and 3x3 convolutions stride 2 (except lasts).
@@ -201,17 +208,20 @@ def text_net(inputs,
 			net = slim.conv2d(net, 256, [1, 1], scope='conv1x1')
 			net = custom_layers.pad2d(net, pad=(1, 1))
 			net = slim.conv2d(net, 512, [3, 3], stride=2, scope='conv3x3', padding='VALID')
+			net = slim.batch_norm(net)
 		end_points[end_point] = net
 		end_point = 'conv9'
 		with tf.variable_scope(end_point):
 			net = slim.conv2d(net, 128, [1, 1], scope='conv1x1')
 			net = custom_layers.pad2d(net, pad=(1, 1))
 			net = slim.conv2d(net, 256, [3, 3], stride=2, scope='conv3x3', padding='VALID')
+			net = slim.batch_norm(net)
 		end_points[end_point] = net
 		end_point = 'conv10'
 		with tf.variable_scope(end_point):
 			net = slim.conv2d(net, 128, [1, 1], scope='conv1x1')
 			net = slim.conv2d(net, 256, [3, 3], scope='conv3x3', padding='VALID')
+			net = slim.batch_norm(net)
 		end_points[end_point] = net
 		end_point = 'global'
 		with tf.variable_scope(end_point):
@@ -255,21 +265,22 @@ def text_multibox_layer(layer,
 	num_classes = 2
 	# Location.
 	num_loc_pred = 2*num_box * 4
-	
+
 	if(layer == 'global'):
 		loc_pred = slim.conv2d(net, num_loc_pred, [1, 1], activation_fn=None, padding = 'VALID',
 						   scope='conv_loc')
 	else:
 		loc_pred = slim.conv2d(net, num_loc_pred, [1, 5], activation_fn=None, padding = 'SAME',
 						   scope='conv_loc')
-	
-	#loc_pred = slim.conv2d(net, num_loc_pred, [1, 5], activation_fn=None, padding = 'SAME',
-	#					   scope='conv_loc')
+	'''
+	loc_pred = slim.conv2d(net, num_loc_pred, [1, 5], activation_fn=None, padding = 'SAME',
+						   scope='conv_loc')
+	'''
 	loc_pred = custom_layers.channel_to_last(loc_pred)
 	loc_pred = tf.reshape(loc_pred, loc_pred.get_shape().as_list()[:-1] + [2,num_box,4])
 	# Class prediction.
 	scores_pred = 2 * num_box * num_classes
-	
+
 	if(layer == 'global'):
 		sco_pred = slim.conv2d(net, scores_pred, [1, 1], activation_fn=None, padding = 'VALID',
 						   scope='conv_cls')

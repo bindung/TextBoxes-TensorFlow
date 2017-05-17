@@ -216,7 +216,7 @@ def textbox_anchor_one_layer(img_shape,
     # Follow the papers scheme
     # 12 ahchor boxes with out sk' = sqrt(sk * sk+1)
     y, x = np.mgrid[0:feat_size[0], 0:feat_size[1]]
-    y = (y.astype(dtype) + offset) / feat_size[0]
+    y = (y.astype(dtype) + offset) / feat_size[0] 
     x = (x.astype(dtype) + offset) / feat_size[1]
     y_offset = y + offset
     x_offset = x

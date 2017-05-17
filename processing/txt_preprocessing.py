@@ -147,20 +147,21 @@ def preprocess_for_train(image, labels, bboxes,
         tf.summary.image('image_with_box', bbox_image)
         #tf.add_to_collection('EXTRA_LOSSES', num)
 
-        
+        '''
         dst_image = tf_image.apply_with_random_selector(
                 dst_image,
                 lambda x, ordering: tf_image.distort_color_2(x, ordering, True),
                 num_cases=4)
-        
+        '''
         # Rescale to normal range
         #image = tf.cast(dst_image, tf.uint8)
+
         #image = tf.image.convert_image_dtype(image, dtype=tf.float32) 
         #image = tf.nn.sigmoid(dst_image) * 255
-        image = dst_image * 255.0
+        image = dst_image *255
+        image.set_shape([out_shape[0], out_shape[1], 3])
         image = tf_image.tf_image_whitened(image, [_R_MEAN, _G_MEAN, _B_MEAN])
         #image = (dst_image - tf.reduce_min(dst_image))/ (tf.reduce_max(dst_image) - tf.reduce_min(dst_image)) * 255.0
-        image.set_shape([out_shape[0], out_shape[1], 3])
         tf_image.tf_summary_image(image, bboxes, 'image_color_distorted')
         bboxes = tf.minimum(bboxes, 1.0)
         bboxes = tf.maximum(bboxes, 0.0)

@@ -36,23 +36,41 @@ def get_batch(dataset_dir,
 											 'object/label',
 											 'object/bbox'])
 
+
 	image, glabels, gbboxes,num = \
-	txt_preprocessing.preprocess_image(image,  glabels,gbboxes, 
-											out_shape,is_training=is_training)
+		txt_preprocessing.preprocess_image(image,  glabels,gbboxes, 
+										out_shape,is_training=is_training)
 
 	glocalisations, gscores = \
 	net.bboxes_encode( gbboxes, anchors, num)
+	if is_training:
+		batch_shape = [1] + [len(anchors)] * 2
 
-	batch_shape = [1] + [len(anchors)] * 2
 
+		r = tf.train.batch(
+			tf_utils.reshape_list([image, glocalisations, gscores]),
+			batch_size=batch_size,
+			num_threads=num_preprocessing_threads,
+			capacity=5 * batch_size,
+			)
 
-	r = tf.train.batch(
-		tf_utils.reshape_list([image, glocalisations, gscores]),
-		batch_size=batch_size,
-		num_threads=num_preprocessing_threads,
-		capacity=5 * batch_size)
+		b_image, b_glocalisations, b_gscores= \
+			tf_utils.reshape_list(r, batch_shape)
 
-	b_image, b_glocalisations, b_gscores= \
-		tf_utils.reshape_list(r, batch_shape)
+		return b_image, b_glocalisations, b_gscores
 
-	return b_image, b_glocalisations, b_gscores
+	else:
+		batch_shape = [1] * 3 + [len(anchors)] * 2
+		r = tf.train.batch(
+			tf_utils.reshape_list([image, glabels, gbboxes,
+								   glocalisations, gscores],
+			batch_size=batch_size,
+			num_threads=num_preprocessing_threads,
+			capacity=5 * batch_size,
+			dynamic_pad=True))
+
+		image, glabels, gbboxes, glocalisations, gscores = \
+			tf_utils.reshape_list(r, batch_shape)
+
+		return image, glabels, gbboxes, glocalisations, gscores
+
