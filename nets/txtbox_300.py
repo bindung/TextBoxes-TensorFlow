@@ -413,8 +413,8 @@ def text_losses(logits, localisations,
 					mask = tf.logical_or(nmask, pmask)
 					fmask = tf.cast(mask, tf.float32)
 					'''
-					loss = tf.losses.compute_weighted_loss(loss, fpmask)
-					#loss = tf.reduce_mean(loss)
+					#loss = tf.losses.compute_weighted_loss(loss, fpmask)
+					loss = tf.reduce_mean(loss)
 					l_cross_pos.append(loss)
 				
 
@@ -441,7 +441,7 @@ def text_losses(logits, localisations,
 			tf.add_to_collection('EXTRA_LOSSES', total_cross)
 			tf.add_to_collection('EXTRA_LOSSES', total_loc)
 
-			total_loss = tf.add(total_loc, total_cross, 'total_loss')
+			total_loss = tf.add(total_loc, total_cross_pos, 'total_loss')
 			tf.add_to_collection('EXTRA_LOSSES', total_loss)
 		
 		return total_loss
