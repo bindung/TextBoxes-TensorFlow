@@ -78,7 +78,7 @@ class TextboxNet(object):
 		anchor_steps=[8, 16, 30, 60, 100, 300],
 		scales = [0.2 + i*0.8/5  for i in range(6)],
 		#scales = [0.05, 0.1,0.15,0.25,0.4,0.65],
-		match_threshold = 0.9
+		match_threshold = 0.5
 		)
 
 	def __init__(self, params=None):
