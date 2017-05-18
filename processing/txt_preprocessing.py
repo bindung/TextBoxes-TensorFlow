@@ -50,7 +50,7 @@ def distorted_bounding_box_crop(image,
                                 bboxes,
                                 min_object_covered=0.1,
                                 aspect_ratio_range=(0.3, 2.0),
-                                area_range=(0.1, 1.0),
+                                area_range=(0.3, 1.0),
                                 max_attempts=200,
                                 scope=None):
     """Generates cropped_image using a one of the bboxes randomly distorted.
@@ -83,7 +83,7 @@ def distorted_bounding_box_crop(image,
                 aspect_ratio_range=aspect_ratio_range,
                 area_range=area_range,
                 max_attempts=max_attempts,
-                use_image_if_no_bounding_boxes=True)
+                use_image_if_no_bounding_boxes=False)
         distort_bbox = distort_bbox[0, 0]
 
         # Crop the image to the specified bounding box.
@@ -147,21 +147,16 @@ def preprocess_for_train(image, labels, bboxes,
         tf.summary.image('image_with_box', bbox_image)
         #tf.add_to_collection('EXTRA_LOSSES', num)
 
-        '''
+        
         dst_image = tf_image.apply_with_random_selector(
                 dst_image,
                 lambda x, ordering: tf_image.distort_color_2(x, ordering, True),
                 num_cases=4)
-        '''
+        
         # Rescale to normal range
-        #image = tf.cast(dst_image, tf.uint8)
-
-        #image = tf.image.convert_image_dtype(image, dtype=tf.float32) 
-        #image = tf.nn.sigmoid(dst_image) * 255
         image = dst_image *255
         image.set_shape([out_shape[0], out_shape[1], 3])
         image = tf_image.tf_image_whitened(image, [_R_MEAN, _G_MEAN, _B_MEAN])
-        #image = (dst_image - tf.reduce_min(dst_image))/ (tf.reduce_max(dst_image) - tf.reduce_min(dst_image)) * 255.0
         tf_image.tf_summary_image(image, bboxes, 'image_color_distorted')
         bboxes = tf.minimum(bboxes, 1.0)
         bboxes = tf.maximum(bboxes, 0.0)

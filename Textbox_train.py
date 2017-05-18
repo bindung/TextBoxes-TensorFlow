@@ -10,6 +10,7 @@ import os, os.path
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
 import tf_utils
+from deployment import model_deploy
 import load_batch
 from nets import txtbox_300
 
@@ -32,12 +33,18 @@ tf.app.flags.DEFINE_string(
 tf.app.flags.DEFINE_string(
 	'train_dir', '/tmp/tfmodel/',
 	'Directory where checkpoints and event logs are written to.')
-tf.app.flags.DEFINE_string(
-	'gpu_data', '/gpu:0',
-	'Which gpu to use')
-tf.app.flags.DEFINE_string(
-	'gpu_train', '/gpu:0',
-	'Which gpu to use')
+tf.app.flags.DEFINE_integer('num_clones', 1,
+							'Number of model clones to deploy.')
+
+tf.app.flags.DEFINE_boolean('clone_on_cpu', False,
+							'Use CPUs to deploy clones.')
+
+tf.app.flags.DEFINE_integer('worker_replicas', 1, 'Number of worker replicas.')
+
+tf.app.flags.DEFINE_integer(
+	'num_ps_tasks', 0,
+	'The number of parameter servers. If the value is 0, then the parameters '
+	'are handled locally by the worker.')
 tf.app.flags.DEFINE_integer(
 	'num_readers', 4,
 	'The number of parallel readers that read data from the dataset.')
@@ -57,6 +64,9 @@ tf.app.flags.DEFINE_integer(
 tf.app.flags.DEFINE_float(
 	'gpu_memory_fraction', 0.8
 	, 'GPU memory fraction to use.')
+
+tf.app.flags.DEFINE_integer(
+	'task', 0, 'Task id of the replica running the training.')
 
 # =========================================================================== #
 # Optimization Flags.
@@ -155,19 +165,19 @@ tf.app.flags.DEFINE_string(
 	'checkpoint_path', None,
 	'The path to a checkpoint from which to fine-tune.')
 tf.app.flags.DEFINE_string(
-    'checkpoint_model_scope', None,
-    'Model scope in the checkpoint. None if the same as the trained model.')
+	'checkpoint_model_scope', None,
+	'Model scope in the checkpoint. None if the same as the trained model.')
 tf.app.flags.DEFINE_string(
-    'checkpoint_exclude_scopes', None,
-    'Comma-separated list of scopes of variables to exclude when restoring '
-    'from a checkpoint.')
+	'checkpoint_exclude_scopes', None,
+	'Comma-separated list of scopes of variables to exclude when restoring '
+	'from a checkpoint.')
 tf.app.flags.DEFINE_string(
-    'trainable_scopes', None,
-    'Comma-separated list of scopes to filter the set of variables to train.'
-    'By default, None would train all the variables.')
+	'trainable_scopes', None,
+	'Comma-separated list of scopes to filter the set of variables to train.'
+	'By default, None would train all the variables.')
 tf.app.flags.DEFINE_boolean(
-    'ignore_missing_vars', False,
-    'When restoring a checkpoint would ignore missing variables.')
+	'ignore_missing_vars', False,
+	'When restoring a checkpoint would ignore missing variables.')
 
 
 FLAGS = tf.app.flags.FLAGS
@@ -182,6 +192,22 @@ def main(_):
 	tf.logging.set_verbosity(tf.logging.DEBUG)
 
 	with tf.Graph().as_default():
+		######################
+		# Config model_deploy#
+		######################
+		deploy_config = model_deploy.DeploymentConfig(
+			num_clones=FLAGS.num_clones,
+			clone_on_cpu=FLAGS.clone_on_cpu,
+			replica_id=FLAGS.task,
+			num_replicas=FLAGS.worker_replicas,
+			num_ps_tasks=FLAGS.num_ps_tasks)
+
+		# Create global_step
+		with tf.device(deploy_config.variables_device()):
+			global_step = slim.create_global_step()
+
+
+
 		params = txtbox_300.TextboxNet.default_params
 		params = params._replace( match_threshold=FLAGS.match_threshold)
 		# initalize the net
@@ -189,42 +215,61 @@ def main(_):
 		out_shape = net.params.img_shape
 		anchors = net.anchors(out_shape)
 
-		# Create global_step.
-		
-		global_step = slim.create_global_step()
 		# create batch dataset
+		with tf.device(deploy_config.inputs_device()):
+			b_image, b_glocalisations, b_gscores = \
+			load_batch.get_batch(FLAGS.dataset_dir,
+								 FLAGS.num_readers,
+								 FLAGS.batch_size,
+								 out_shape,
+								 net,
+								 anchors,
+								 FLAGS.num_preprocessing_threads,
+								 file_pattern = FLAGS.file_pattern,
+								 is_training = True)
+				
+			batch_queue = slim.prefetch_queue.prefetch_queue(
+				tf_utils.reshape_list([b_image, b_glocalisations, b_gscores]),
+				capacity=2 * deploy_config.num_clones)
 
-		b_image, b_glocalisations, b_gscores = \
-		load_batch.get_batch(FLAGS.dataset_dir,
-							 FLAGS.num_readers,
-							 FLAGS.batch_size,
-							 out_shape,
-							 net,
-							 anchors,
-							 FLAGS.num_preprocessing_threads,
-							 file_pattern = FLAGS.file_pattern,
-							 is_training = True)
+
+		# =================================================================== #
+		# Define the model running on every GPU.
+		# =================================================================== #
+		def clone_fn(batch_queue):
 			
+			#Allows data parallelism by creating multiple
+			#clones of network_fn. 
+			
+			# Dequeue batch.
+			batch_shape = [1] + [len(anchors)] * 2
+			b_image, b_glocalisations, b_gscores = \
+				tf_utils.reshape_list(batch_queue.dequeue(), batch_shape)
 
-
-		with tf.device(FLAGS.gpu_train):
-			#with tf.device(FLAGS.gpu_train):
-
+			# Construct SSD network.
 			arg_scope = net.arg_scope(weight_decay=FLAGS.weight_decay)
-
 			with slim.arg_scope(arg_scope):
 				localisations, logits, end_points = \
-						net.net(b_image, is_training=True)
+					net.net(b_image, is_training=True)
 			# Add loss function.
-			total_loss = net.losses(logits, localisations,
+			net.losses(logits, localisations,
 							   b_glocalisations, b_gscores,
 							   negative_ratio=FLAGS.negative_ratio,
 							   alpha=FLAGS.loss_alpha,
 							   label_smoothing=FLAGS.label_smoothing)
+			return end_points
 
 		# Gather summaries.
 		summaries = set(tf.get_collection(tf.GraphKeys.SUMMARIES))
 
+		clones = model_deploy.create_clones(deploy_config, clone_fn, [batch_queue])
+		first_clone_scope = deploy_config.clone_scope(0)
+
+		# Gather update_ops from the first clone. These contain, for example,
+		# the updates for the batch_norm variables created by network_fn.
+		update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS, first_clone_scope)
+
+		end_points = clones[0].outputs
 		for end_point in end_points:
 			x = end_points[end_point]
 			summaries.add(tf.summary.histogram('activations/' + end_point, x))
@@ -233,6 +278,9 @@ def main(_):
 
 		#for loss in tf.get_collection(tf.GraphKeys.LOSSES):
 		#	summaries.add(tf.summary.scalar(loss.op.name, loss))
+		# Add summaries for losses.
+		for loss in tf.get_collection(tf.GraphKeys.LOSSES, first_clone_scope):
+		  summaries.add(tf.summary.scalar('losses/%s' % loss.op.name, loss))
 
 		for loss in tf.get_collection('EXTRA_LOSSES'):
 			summaries.add(tf.summary.scalar(loss.op.name, loss))
@@ -240,86 +288,57 @@ def main(_):
 		for variable in slim.get_model_variables():
 			summaries.add(tf.summary.histogram(variable.op.name, variable))
 
-		gradient_multipliers = {
-    		'conv1/conv1_1/weights_1' : 1.,
-    		'conv1/conv1_1/biases_1' : 1.,
-    		'conv1/conv1_2/weights_1' : 1.,
-    		'conv1/conv1_2/biases_1' : 1.,
-    		'conv2/conv2_1/weights_1' : 1.,
-    		'conv2/conv2_1/biases_1' : 1.,
-    		'conv2/conv2_2/weights_1' : 1.,
-    		'conv2/conv2_2/biases_1' : 1.,
-    		'conv3/conv3_1/weights_1' : 1.,
-    		'conv3/conv3_1/biases_1' : 2.,
-   			'conv3/conv3_2/weights_1' : 1.,
-    		'conv3/conv3_2/biases_1' : 2.,
-    		'conv4/conv4_1/weights_1' : 1.,
-    		'conv4/conv4_1/biases_1' : 2.,
-    		'conv4/conv4_2/weights_1' : 1.,
-    		'conv4/conv4_2/biases_1' : 2.,
-    		'conv4/conv4_3/weights_1' : 1.,
-    		'conv4/conv4_3/biases_1' : 2.,
-    		'conv5/conv5_1/weights_1' : 1.,
-    		'conv5/conv5_1/biases_1' : 2.,
-    		'conv5/conv5_2/weights_1' : 1.,
-    		'conv5/conv5_2/biases_1' : 2.,
-    		'conv5/conv5_3/weights_1' : 1.,
-    		'conv5/conv5_3/biases_1' : 2.,
-    		'conv6/weights_1' : 1.,
-    		'conv6/biases_1' : 2.,
-    		'conv7/weights_1' : 1.,
-    		'conv7/biases_1' : 2.,
-    		'conv8/conv1x1/weights_1' :1.,
-    		'conv8/conv1x1/biases_1' :2.,
-    		'conv8/conv3x3/weights_1' :1.,
-    		'conv8/conv3x3/biases_1' :2.,
-    		'conv9/conv1x1/weights_1' :1.,
-    		'conv9/conv1x1/biases_1' :2.,
-    		'conv9/conv3x3/weights_1' :1.,
-    		'conv9/conv3x3/biases_1' :2.,
-    		'conv10/conv1x1/weights_1' :1.,
-    		'conv10/conv1x1/biases_1' :2.,
-    		'conv10/conv3x3/weights_1' :1.,
-    		'conv10/conv3x3/biases_1' :2.,
-    		'global/pool6/weights_1' :1.,
-    		'global/pool6/biases_1' :2.,
-    		'conv4_box/conv_cls/weights_1': 1.,
-    		'conv4_box/conv_cls/biases_1': 2.,
-    		'conv4_box/conv_loc/weights_1': 1.,
-    		'conv4_box/conv_loc/biases_1': 2.,
-    		'conv7_box/conv_loc/weights_1': 1.,
-    		'conv7_box/conv_loc/biases_1': 2.,
-    		'conv7_box/conv_cls/weights_1': 1.,
-    		'conv7_box/conv_cls/biases_1': 2.,
-    		'conv8_box/conv_loc/weights_1': 1.,
-    		'conv8_box/conv_loc/biases_1': 2.,
-    		'conv8_box/conv_cls/weights_1': 1.,
-    		'conv8_box/conv_cls/biases_1': 2.,
-    		'conv9_box/conv_loc/weights_1': 1.,
-    		'conv9_box/conv_loc/biases_1': 2.,
-    		'conv9_box/conv_cls/weights_1': 1.,
-    		'conv9_box/conv_cls/biases_1': 2.,
-    		'conv10_box/conv_cls/weights_1': 1.,
-    		'conv10_box/conv_cls/biases_1': 2.,
-    		'conv10_box/conv_loc/weights_1': 1.,
-    		'conv10_box/conv_loc/biases_1': 2.,
-    		'global_box/conv_cls/weights_1': 1.,
-    		'global_box/conv_cls/biases_1': 2.,
-    		'global_box/conv_loc/weights_1': 1.,
-    		'global_box/conv_loc/biases_1': 2.
-  		}
-		with tf.device(FLAGS.gpu_train):
+		#################################
+		# Configure the moving averages #
+		#################################
+		if FLAGS.moving_average_decay:
+			moving_average_variables = slim.get_model_variables()
+			variable_averages = tf.train.ExponentialMovingAverage(
+							  FLAGS.moving_average_decay, global_step)
+		else:
+			moving_average_variables, variable_averages = None, None
+
+		#########################################
+		# Configure the optimization procedure. #
+		#########################################
+		with tf.device(deploy_config.optimizer_device()):
 			learning_rate = tf_utils.configure_learning_rate(FLAGS,
 															 FLAGS.num_samples,
 															 global_step)
-			# Configure the optimization procedure 
 			optimizer = tf_utils.configure_optimizer(FLAGS, learning_rate)
 			summaries.add(tf.summary.scalar('learning_rate', learning_rate))
 
-			## Training 
-			#loss = tf.get_collection(tf.GraphKeys.LOSSES)
-			#total_loss = tf.add_n(loss)
-			train_op = slim.learning.create_train_op(total_loss, optimizer, gradient_multipliers=gradient_multipliers)
+		if FLAGS.moving_average_decay:
+			# Update ops executed locally by trainer.
+			update_ops.append(variable_averages.apply(moving_average_variables))
+
+		# Variables to train.
+		variables_to_train = tf_utils.get_variables_to_train(FLAGS)
+
+		#  and returns a train_tensor and summary_op
+		total_loss, clones_gradients = model_deploy.optimize_clones(
+			clones,
+			optimizer,
+			var_list=variables_to_train)
+		# Add total_loss to summary.
+		summaries.add(tf.summary.scalar('total_loss', total_loss))
+
+		# Create gradient updates.
+		grad_updates = optimizer.apply_gradients(clones_gradients,
+												 global_step=global_step)
+		update_ops.append(grad_updates)
+
+		update_op = tf.group(*update_ops)
+		train_tensor = control_flow_ops.with_dependencies([update_op], total_loss,
+														  name='train_op')
+
+		# Add the summaries from the first clone. These contain the summaries
+		# created by model_fn and either optimize_clones() or _gather_clone_loss().
+		summaries |= set(tf.get_collection(tf.GraphKeys.SUMMARIES,
+										   first_clone_scope))
+
+		# Merge all summaries together.
+		summary_op = tf.summary.merge(list(summaries), name='summary_op')
 
 		# =================================================================== #
 		# Kicks off the training.
@@ -333,13 +352,13 @@ def main(_):
 							   write_version=2,
 							   pad_step_number=False)
 
-
 		slim.learning.train(
-			train_op,
+			train_tensor,
 			logdir=FLAGS.train_dir,
 			master='',
 			is_chief=True,
 			init_fn=tf_utils.get_init_fn(FLAGS),
+			summary_op=summary_op,
 			number_of_steps=FLAGS.max_number_of_steps,
 			log_every_n_steps=FLAGS.log_every_n_steps,
 			save_summaries_secs=FLAGS.save_summaries_secs,

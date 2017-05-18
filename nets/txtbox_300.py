@@ -351,7 +351,78 @@ def text_losses(logits, localisations,
 			   alpha=1.,
 			   label_smoothing=0.,
 			   scope=None):
-	"""Loss functions for training the text box network.
+	alllogits = []
+	alllocalization = []
+	allglocalization = []
+	allgscores = []
+	for i in range(len(logits)):
+		alllogits.append(tf.reshape(logits[i], [-1, 2]))
+		allgscores.append(tf.reshape(gscores[i], [-1]))
+		allglocalization.append(tf.reshape(glocalisations[i], [-1,4]))
+		alllocalization.append(tf.reshape(localisations[i], [-1,4]))
+
+	alllogits = tf.concat(alllogits, 0)
+	allgscores = tf.concat(allgscores, 0)
+	alllocalization =tf.concat(alllocalization, 0)
+	allglocalization =tf.concat(allglocalization, 0)
+
+	pmask = allgscores > match_threshold
+	ipmask = tf.cast(pmask ,tf.int32)
+	n_pos = tf.reduce_sum(ipmask)+1
+	num = tf.ones_like(allgscores)
+	n = tf.reduce_sum(num)
+	fpmask = tf.cast(pmask , tf.float32)
+	nmask = allgscores <= match_threshold
+	loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=alllogits,labels=ipmask)
+	loss_neg = tf.where(pmask,
+					   tf.cast(tf.zeros_like(ipmask),tf.float32),
+					   loss)
+
+	loss_neg_flat = tf.reshape(loss_neg, [-1])
+	n_neg = tf.minimum(3*n_pos, tf.cast(n,tf.int32))
+	val, idxes = tf.nn.top_k(loss_neg_flat, k=n_neg)
+	minval = val[-1]
+	nmask = tf.logical_and(nmask, loss > minval)
+	inmask = tf.cast(nmask, tf.int32)
+	n_neg = tf.reduce_sum(inmask)
+	fnmask = tf.cast(nmask, tf.float32)
+	l_cross_neg = tf.losses.compute_weighted_loss(loss, fnmask)
+	l_cross_pos = tf.losses.compute_weighted_loss(loss, fpmask)
+
+	weights = tf.expand_dims(alpha * fpmask, axis=-1)
+	l_loc = custom_layers.abs_smooth(alllocalization - allglocalization)
+	l_loc = tf.losses.compute_weighted_loss(l_loc, weights)
+	
+	tf.losses.add_loss(l_cross_neg)
+	tf.losses.add_loss(l_cross_pos)
+	tf.losses.add_loss(l_loc)
+
+	with tf.name_scope('total'):
+			# Add to EXTRA LOSSES TF.collection
+			total_cross = tf.add(l_cross_pos, l_cross_neg, 'cross_entropy')
+			tf.add_to_collection('EXTRA_LOSSES', n_pos)
+			tf.add_to_collection('EXTRA_LOSSES', n_neg)
+			tf.add_to_collection('EXTRA_LOSSES', l_cross_neg)
+			tf.add_to_collection('EXTRA_LOSSES', l_cross_neg)
+			tf.add_to_collection('EXTRA_LOSSES', l_loc)
+			tf.add_to_collection('EXTRA_LOSSES', total_cross)
+
+			total_loss = tf.add(l_loc, total_cross, 'total_loss')
+			tf.add_to_collection('EXTRA_LOSSES', total_loss)
+		
+	return total_loss
+
+
+"""
+def text_losses(logits, localisations,
+			   glocalisations, gscores,
+			   match_threshold,
+			   negative_ratio=3.,
+			   alpha=1.,
+			   label_smoothing=0.,
+			   scope=None):
+	'''
+	Loss functions for training the text box network.
 
 	Arguments:
 	  logits: (list of) predictions logits Tensors;
@@ -360,7 +431,7 @@ def text_losses(logits, localisations,
 	  gscores: (list of) groundtruth score Tensors;
 
 	return: loss
-	"""
+	'''
 	with tf.name_scope(scope, 'text_loss'):
 		l_cross_pos = []
 		l_cross_neg = []
@@ -445,7 +516,7 @@ def text_losses(logits, localisations,
 			tf.add_to_collection('EXTRA_LOSSES', total_loss)
 		
 		return total_loss
-
+"""
 
 
 
