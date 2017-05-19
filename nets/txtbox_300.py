@@ -167,17 +167,17 @@ def text_net(inputs,
 	with tf.variable_scope(scope, 'text_box_300', [inputs], reuse=reuse):
 		# Original VGG-16 blocks.
 		net = slim.repeat(inputs, 2, slim.conv2d, 64, [3, 3], scope='conv1')
-		net = slim.batch_norm(net)
+		#net = slim.batch_norm(net)
 		end_points['conv1'] = net
 		net = slim.max_pool2d(net, [2, 2], scope='pool1')
 		# Block 2.
 		net = slim.repeat(net, 2, slim.conv2d, 128, [3, 3], scope='conv2')
-		net = slim.batch_norm(net)
+		#net = slim.batch_norm(net)
 		end_points['conv2'] = net # 150,150 128
 		net = slim.max_pool2d(net, [2, 2], scope='pool2')
 		# Block 3. # 75 75 256
 		net = slim.repeat(net, 3, slim.conv2d, 256, [3, 3], scope='conv3')
-		net = slim.batch_norm(net)
+		#net = slim.batch_norm(net)
 		end_points['conv3'] = net
 		net = slim.max_pool2d(net, [2, 2], scope='pool3',padding='SAME')
 		# Block 4. # 38 38 512
@@ -187,7 +187,7 @@ def text_net(inputs,
 		net = slim.max_pool2d(net, [2, 2], scope='pool4')
 		# Block 5. # 19 19 512
 		net = slim.repeat(net, 3, slim.conv2d, 512, [3, 3], scope='conv5')
-		net = slim.batch_norm(net)
+		#net = slim.batch_norm(net)
 		end_points['conv5'] = net
 		net = slim.max_pool2d(net, [3, 3], stride=1, scope='pool5',padding='SAME')
 
