@@ -279,10 +279,10 @@ def main(_):
 		#for loss in tf.get_collection(tf.GraphKeys.LOSSES):
 		#	summaries.add(tf.summary.scalar(loss.op.name, loss))
 		# Add summaries for losses.
-		for loss in tf.get_collection(tf.GraphKeys.LOSSES, first_clone_scope):
-		  summaries.add(tf.summary.scalar('losses/%s' % loss.op.name, loss))
+		#for loss in tf.get_collection(tf.GraphKeys.LOSSES, first_clone_scope):
+		#  summaries.add(tf.summary.scalar('losses/%s' % loss.op.name, loss))
 
-		for loss in tf.get_collection('EXTRA_LOSSES'):
+		for loss in tf.get_collection('EXTRA_LOSSES',first_clone_scope):
 			summaries.add(tf.summary.scalar(loss.op.name, loss))
 
 		for variable in slim.get_model_variables():
