@@ -167,7 +167,7 @@ def text_net(inputs,
 	with tf.variable_scope(scope, 'text_box_300', [inputs], reuse=reuse):
 		# Original VGG-16 blocks.
 		net = slim.repeat(inputs, 2, slim.conv2d, 64, [3, 3], scope='conv1')
-		net = slim.batch_norm(net)
+		#net = slim.batch_norm(net)
 		end_points['conv1'] = net
 		net = slim.max_pool2d(net, [2, 2], scope='pool1')
 		# Block 2.
@@ -194,12 +194,12 @@ def text_net(inputs,
 		# Additional SSD blocks.
 		# Block 6: let's dilate the hell out of it!
 		net = slim.conv2d(net, 1024, [3, 3], rate=6, scope='conv6')
-		#net = slim.batch_norm(net)
+		net = slim.batch_norm(net)
 		end_points['conv6'] = net
 		#net = tf.layers.dropout(net, rate=dropout_keep_prob, training = is_training)
 		# Block 7: 1x1 conv. Because the fuck.
 		net = slim.conv2d(net, 1024, [1, 1], scope='conv7')
-		#net = slim.batch_norm(net)
+		net = slim.batch_norm(net)
 		end_points['conv7'] = net
 		#net = tf.layers.dropout(net, rate=dropout_keep_prob, training = is_training)
 		# Block 8/9/10/11: 1x1 and 3x3 convolutions stride 2 (except lasts).
@@ -208,26 +208,27 @@ def text_net(inputs,
 			net = slim.conv2d(net, 256, [1, 1], scope='conv1x1')
 			net = custom_layers.pad2d(net, pad=(1, 1))
 			net = slim.conv2d(net, 512, [3, 3], stride=2, scope='conv3x3', padding='VALID')
-			#net = slim.batch_norm(net)
+			net = slim.batch_norm(net)
 		end_points[end_point] = net
 		end_point = 'conv9'
 		with tf.variable_scope(end_point):
 			net = slim.conv2d(net, 128, [1, 1], scope='conv1x1')
 			net = custom_layers.pad2d(net, pad=(1, 1))
 			net = slim.conv2d(net, 256, [3, 3], stride=2, scope='conv3x3', padding='VALID')
-			#net = slim.batch_norm(net)
+			net = slim.batch_norm(net)
 		end_points[end_point] = net
 		end_point = 'conv10'
 		with tf.variable_scope(end_point):
 			net = slim.conv2d(net, 128, [1, 1], scope='conv1x1')
 			net = slim.conv2d(net, 256, [3, 3], scope='conv3x3', padding='VALID')
-			#net = slim.batch_norm(net)
+			net = slim.batch_norm(net)
 		end_points[end_point] = net
 		end_point = 'global'
 		with tf.variable_scope(end_point):
-			net = slim.avg_pool2d(net, [3,3], scope='pool6', padding = 'VALID')
-			#net = slim.conv2d(net, 128, [1, 1], scope='conv1x1')
-			#net = slim.conv2d(net, 256, [3, 3], scope='conv3x3', padding='VALID')
+			#net = slim.avg_pool2d(net, [3,3], scope='pool6', padding = 'VALID')
+			net = slim.conv2d(net, 128, [1, 1], scope='conv1x1')
+			net = slim.conv2d(net, 256, [3, 3], scope='conv3x3', padding='VALID')
+			net = slim.batch_norm(net)
 		end_points[end_point] = net
 
 		# Prediction and localisations layers.
