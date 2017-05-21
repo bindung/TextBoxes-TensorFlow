@@ -396,20 +396,25 @@ def text_losses(logits, localisations,
 		inmask = tf.cast(nmask, tf.int32)
 		n_neg = tf.reduce_sum(inmask)
 		fnmask = tf.cast(nmask, tf.float32)
-		l_cross_neg = tf.losses.compute_weighted_loss(loss, fnmask)
-		l_cross_pos = tf.losses.compute_weighted_loss(loss, fpmask)
+		l_cross_neg = tf.reduce_sum(loss * fnmask)/tf.cast(n_neg, tf.float32)
+		l_cross_pos = tf.reduce_sum(loss * fpmask)/tf.cast(n_pos, tf.float32)
+		all_mask = tf.logical_or(pmask, nmask)
+		all_fmask = tf.cast(all_mask, tf.float32)
+		total_cross = tf.reduce_sum(loss * all_fmask) /tf.cast(n_neg + n_pos, tf.float32)
 
 		weights = tf.expand_dims(alpha * fpmask, axis=-1)
 		l_loc = custom_layers.abs_smooth(alllocalization - allglocalization)
-		l_loc = tf.losses.compute_weighted_loss(l_loc, weights)
+		#l_loc = tf.losses.compute_weighted_loss(l_loc, weights)
+		l_loc = tf.reduce_sum(loss * weights) /tf.cast(n_pos, tf.float32)
 		
-		tf.losses.add_loss(l_cross_neg)
-		tf.losses.add_loss(l_cross_pos)
-		tf.losses.add_loss(l_loc)
+		#tf.losses.add_loss(total_cross)
+		#tf.losses.add_loss(l_cross)
+		#tf.losses.add_loss(l_loc)
 
 		with tf.name_scope('total'):
 				# Add to EXTRA LOSSES TF.collection
-				total_cross = tf.add(l_cross_pos, l_cross_neg, 'cross_entropy')
+				#total_cross = tf.add(l_cross_pos, l_cross_neg, 'cross_entropy')
+				total_cross = tf.identity(total_cross, name = 'total_cross')
 				n_pos = tf.identity(n_pos, name = 'num_of_positive')
 				n_neg = tf.identity(n_neg, name = 'num_of_nagitive')
 				l_cross_neg = tf.identity(l_cross_neg, name = 'l_cross_neg')
@@ -424,7 +429,8 @@ def text_losses(logits, localisations,
 
 				total_loss = tf.add(l_loc, total_cross, 'total_loss')
 				tf.add_to_collection('EXTRA_LOSSES', total_loss)
-		
+				tf.losses.add_loss(total_cross)
+
 	return total_loss
 
 
