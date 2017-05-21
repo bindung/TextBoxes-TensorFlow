@@ -396,16 +396,18 @@ def text_losses(logits, localisations,
 		inmask = tf.cast(nmask, tf.int32)
 		n_neg = tf.reduce_sum(inmask)
 		fnmask = tf.cast(nmask, tf.float32)
+
 		l_cross_neg = tf.reduce_sum(loss * fnmask)/tf.cast(n_neg, tf.float32)
 		l_cross_pos = tf.reduce_sum(loss * fpmask)/tf.cast(n_pos, tf.float32)
+
+
 		all_mask = tf.logical_or(pmask, nmask)
 		all_fmask = tf.cast(all_mask, tf.float32)
-		total_cross = tf.reduce_sum(loss * all_fmask) /tf.cast(n_neg + n_pos, tf.float32)
+		total_cross = tf.losses.compute_weighted_loss(loss, all_fmask)
 
 		weights = tf.expand_dims(alpha * fpmask, axis=-1)
 		l_loc = custom_layers.abs_smooth(alllocalization - allglocalization)
-		#l_loc = tf.losses.compute_weighted_loss(l_loc, weights)
-		l_loc = tf.reduce_sum(loss * weights) /tf.cast(n_pos, tf.float32)
+		l_loc = tf.losses.compute_weighted_loss(l_loc, weights)
 		
 		#tf.losses.add_loss(total_cross)
 		#tf.losses.add_loss(l_cross)
