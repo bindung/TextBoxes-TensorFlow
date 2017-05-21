@@ -32,6 +32,8 @@ tf.app.flags.DEFINE_string(
 tf.app.flags.DEFINE_string(
     'train_dir', '/tmp/tfmodel/',
     'Directory where checkpoints and event logs are written to.')
+tf.app.flags.DEFINE_integer('shuffle_data', False,
+                            'Wheather shuffe the datasets')
 tf.app.flags.DEFINE_string(
     'gpu_data', '/gpu:0',
     'Which gpu to use')
@@ -203,7 +205,8 @@ def main(_):
                              anchors,
                              FLAGS.num_preprocessing_threads,
                              file_pattern = FLAGS.file_pattern,
-                             is_training = True)
+                             is_training = True,
+                             shuffe = FLAGS.shuffle_data)
             
 
 
@@ -214,7 +217,7 @@ def main(_):
 
             with slim.arg_scope(arg_scope):
                 localisations, logits, end_points = \
-                        net.net(b_image, is_training=True)
+                        net.net(b_image, is_training=True, use_batch=False)
             # Add loss function.
             total_loss = net.losses(logits, localisations,
                                b_glocalisations, b_gscores,
@@ -252,7 +255,7 @@ def main(_):
             ## Training 
             #loss = tf.get_collection(tf.GraphKeys.LOSSES)
             #total_loss = tf.add_n(loss)
-            train_op = slim.learning.create_train_op(total_loss, optimizer, gradient_multipliers=gradient_multipliers)
+            train_op = slim.learning.create_train_op(total_loss, optimizer, gradient_multipliers=None)
 
         # =================================================================== #
         # Kicks off the training.
