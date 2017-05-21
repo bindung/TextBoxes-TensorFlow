@@ -21,7 +21,8 @@ def get_batch(dataset_dir,
 			  anchors,
 			  num_preprocessing_threads,
 			  file_pattern = '*.tfrecord',
-			  is_training = True):
+			  is_training = True,
+			  shuffe = False):
 	
 	dataset = sythtextprovider.get_datasets(dataset_dir,file_pattern = file_pattern)
 
@@ -30,7 +31,7 @@ def get_batch(dataset_dir,
 				num_readers=num_readers,
 				common_queue_capacity=20 * batch_size,
 				common_queue_min=10 * batch_size,
-				shuffle=True)
+				shuffle=shuffe)
 	
 	[image, shape, glabels, gbboxes] = provider.get(['image', 'shape',
 											 'object/label',

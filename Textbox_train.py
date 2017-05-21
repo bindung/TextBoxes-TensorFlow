@@ -35,7 +35,8 @@ tf.app.flags.DEFINE_string(
 	'Directory where checkpoints and event logs are written to.')
 tf.app.flags.DEFINE_integer('num_clones', 1,
 							'Number of model clones to deploy.')
-
+tf.app.flags.DEFINE_integer('shuffle_data', False,
+							'Wheather shuffe the datasets')
 tf.app.flags.DEFINE_boolean('clone_on_cpu', False,
 							'Use CPUs to deploy clones.')
 
@@ -229,7 +230,8 @@ def main(_):
 								 anchors,
 								 FLAGS.num_preprocessing_threads,
 								 file_pattern = FLAGS.file_pattern,
-								 is_training = True)
+								 is_training = True,
+								 shuffe = FLAGS.shuffle_data)
 				
 			batch_queue = slim.prefetch_queue.prefetch_queue(
 				tf_utils.reshape_list([b_image, b_glocalisations, b_gscores]),
