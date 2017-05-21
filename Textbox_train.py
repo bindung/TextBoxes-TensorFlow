@@ -125,7 +125,7 @@ tf.app.flags.DEFINE_float(
 	'num_epochs_per_decay', 1,
 	'Number of epochs after which learning rate decays.')
 tf.app.flags.DEFINE_float(
-	'moving_average_decay', 0.997,
+	'moving_average_decay', None,
 	'The decay to use for the moving average.'
 	'If left as None, then moving averages are not used.')
 tf.app.flags.DEFINE_float(
