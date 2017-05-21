@@ -397,7 +397,7 @@ def text_losses(logits, localisations,
 		n_neg = tf.minimum(3*n_pos, tf.cast(n,tf.int32))
 		val, idxes = tf.nn.top_k(loss_neg_flat, k=n_neg)
 		minval = val[-1]
-		nmask = tf.logical_and(nmask, loss_neg > minval)
+		nmask = tf.logical_and(nmask, loss_neg >= minval)
 		inmask = tf.cast(nmask, tf.int32)
 		n_neg = tf.reduce_sum(inmask)
 		fnmask = tf.cast(nmask, tf.float32)
