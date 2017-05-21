@@ -128,6 +128,9 @@ tf.app.flags.DEFINE_float(
 	'moving_average_decay', 0.997,
 	'The decay to use for the moving average.'
 	'If left as None, then moving averages are not used.')
+tf.app.flags.DEFINE_float(
+	'use_batch', False,
+	'Wheather use batch_norm or not')
 
 # =========================================================================== #
 # Dataset Flags.
@@ -250,7 +253,7 @@ def main(_):
 			arg_scope = net.arg_scope(weight_decay=FLAGS.weight_decay)
 			with slim.arg_scope(arg_scope):
 				localisations, logits, end_points = \
-					net.net(b_image, is_training=True)
+					net.net(b_image, is_training=True, use_batch=FLAGS.use_batch)
 			# Add loss function.
 			net.losses(logits, localisations,
 							   b_glocalisations, b_gscores,
