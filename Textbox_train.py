@@ -129,7 +129,7 @@ tf.app.flags.DEFINE_float(
 	'moving_average_decay', None,
 	'The decay to use for the moving average.'
 	'If left as None, then moving averages are not used.')
-tf.app.flags.DEFINE_float(
+tf.app.flags.DEFINE_boolean(
 	'use_batch', False,
 	'Wheather use batch_norm or not')
 
