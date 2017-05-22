@@ -150,7 +150,7 @@ def preprocess_for_train(image, labels, bboxes,
         
         dst_image = tf_image.apply_with_random_selector(
                 dst_image,
-                lambda x, ordering: tf_image.distort_color_2(x, ordering, True),
+                lambda x, ordering: tf_image.distort_color_2(x, ordering, False),
                 num_cases=4)
         
         # Rescale to normal range
@@ -160,6 +160,7 @@ def preprocess_for_train(image, labels, bboxes,
         tf_image.tf_summary_image(image, bboxes, 'image_color_distorted')
         bboxes = tf.minimum(bboxes, 1.0)
         bboxes = tf.maximum(bboxes, 0.0)
+        image = image/255.0
         #dst_image = tf.cast(dst_image,tf.float32)
         return image, labels, bboxes,num
 
@@ -231,6 +232,7 @@ def preprocess_for_eval(image, labels, bboxes,
             bboxes = tf.boolean_mask(bboxes, mask)
         # Image data format.
         image = tf_image.tf_image_whitened(image, [_R_MEAN, _G_MEAN, _B_MEAN])
+        image = image/255.0
         return image, labels, bboxes, bbox_img
 
 def preprocess_image(image,
