@@ -388,18 +388,22 @@ def text_losses(logits, localisations,
 		n = tf.reduce_sum(num)
 		fpmask = tf.cast(pmask , tf.float32)
 		nmask = allgscores <= match_threshold
+
+
 		loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=alllogits,labels=ipmask)
 		l_cross_pos = tf.losses.compute_weighted_loss(loss, fpmask)
 
+
+		'''
 		loss_neg = tf.where(pmask,
 						   tf.cast(tf.zeros_like(ipmask),tf.float32),
 						   loss)
-
 		loss_neg_flat = tf.reshape(loss_neg, [-1])
 		n_neg = tf.minimum(3*n_pos, tf.cast(n,tf.int32))
 		val, idxes = tf.nn.top_k(loss_neg_flat, k=n_neg)
 		minval = val[-1]
 		nmask = tf.logical_and(nmask, loss_neg >= minval)
+		'''
 		inmask = tf.cast(nmask, tf.int32)
 		n_neg = tf.reduce_sum(inmask)
 		fnmask = tf.cast(nmask, tf.float32)
