@@ -132,6 +132,9 @@ tf.app.flags.DEFINE_float(
 tf.app.flags.DEFINE_boolean(
 	'use_batch', False,
 	'Wheather use batch_norm or not')
+tf.app.flags.DEFINE_boolean(
+	'use_hard_neg', False,
+	'Wheather use use_hard_neg or not')
 
 # =========================================================================== #
 # Dataset Flags.
@@ -260,6 +263,7 @@ def main(_):
 			net.losses(logits, localisations,
 							   b_glocalisations, b_gscores,
 							   negative_ratio=FLAGS.negative_ratio,
+							   use_hard_neg=FLAGS.use_hard_neg,
 							   alpha=FLAGS.loss_alpha,
 							   label_smoothing=FLAGS.label_smoothing)
 			return end_points

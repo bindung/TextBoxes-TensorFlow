@@ -173,6 +173,7 @@ class TextboxNet(object):
 	def losses(self, logits, localisations,
 			   glocalisations, gscores,
 			   negative_ratio=3.,
+			   use_hard_neg=False,
 			   alpha=1.,
 			   label_smoothing=0.,
 			   scope='text_box_loss'):
@@ -181,7 +182,7 @@ class TextboxNet(object):
 		return text_losses(logits, localisations,
 						  glocalisations, gscores,
 						  match_threshold=self.params.match_threshold,
-						  use_hard_neg=False,
+						  use_hard_neg=use_hard_neg,
 						  negative_ratio=negative_ratio,
 						  alpha=alpha,
 						  label_smoothing=label_smoothing,
