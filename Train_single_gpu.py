@@ -12,6 +12,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
 import tf_utils
 import load_batch
 from nets import txtbox_300
+import pickle
 
 slim = tf.contrib.slim
 # =========================================================================== #
@@ -21,6 +22,12 @@ tf.app.flags.DEFINE_float(
     'loss_alpha', 1., 'Alpha parameter in the loss function.')
 tf.app.flags.DEFINE_float(
     'negative_ratio', 3., 'Negative ratio in the loss function.')
+tf.app.flags.DEFINE_boolean(
+    'use_hard_neg', False,
+    'Wheather use use_hard_neg or not')
+tf.app.flags.DEFINE_boolean(
+    'use_batch', False,
+    'Wheather use batch_norm or not')
 tf.app.flags.DEFINE_float(
     'match_threshold', 0.5, 'Matching threshold in the loss function.')
 tf.app.flags.DEFINE_string(
@@ -217,11 +224,12 @@ def main(_):
 
             with slim.arg_scope(arg_scope):
                 localisations, logits, end_points = \
-                        net.net(b_image, is_training=True, use_batch=False)
+                        net.net(b_image, is_training=True, use_batch=FLAGS.use_batch)
             # Add loss function.
             total_loss = net.losses(logits, localisations,
                                b_glocalisations, b_gscores,
                                negative_ratio=FLAGS.negative_ratio,
+                               use_hard_neg=FLAGS.use_hard_neg,
                                alpha=FLAGS.loss_alpha,
                                label_smoothing=FLAGS.label_smoothing)
 
@@ -255,7 +263,8 @@ def main(_):
             ## Training 
             #loss = tf.get_collection(tf.GraphKeys.LOSSES)
             #total_loss = tf.add_n(loss)
-            train_op = slim.learning.create_train_op(total_loss, optimizer, gradient_multipliers=None)
+            gradient_multipliers = pickle.load(open('nets/multiplier_300.pkl','rb'))
+            train_op = slim.learning.create_train_op(total_loss, optimizer, gradient_multipliers=gradient_multipliers)
 
         # =================================================================== #
         # Kicks off the training.

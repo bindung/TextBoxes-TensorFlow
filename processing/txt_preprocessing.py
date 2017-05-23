@@ -186,7 +186,9 @@ def preprocess_for_eval(image, labels, bboxes,
             raise ValueError('Input must be of size [height, width, C>0]')
 
         image = tf.to_float(image)
-        num = tf.reduce_sum(tf.cast(labels, tf.int32))
+        num = 0
+        if labels:
+            num = tf.reduce_sum(tf.cast(labels, tf.int32))
         # Add image rectangle to bboxes.
         bbox_img = tf.constant([[0., 0., 1., 1.]])
         if bboxes is None:
