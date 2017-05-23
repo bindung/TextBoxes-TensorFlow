@@ -264,22 +264,25 @@ def main(_):
 							   label_smoothing=FLAGS.label_smoothing)
 			return end_points
 
-		# Gather summaries.
-		summaries = set(tf.get_collection(tf.GraphKeys.SUMMARIES))
+		
 
 		clones = model_deploy.create_clones(deploy_config, clone_fn, [batch_queue])
 		first_clone_scope = deploy_config.clone_scope(0)
 
+		# Gather summaries.
+		summaries = set(tf.get_collection(tf.GraphKeys.SUMMARIES,first_clone_scope))
 		# Gather update_ops from the first clone. These contain, for example,
 		# the updates for the batch_norm variables created by network_fn.
 		update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS, first_clone_scope)
 
+		'''
 		end_points = clones[0].outputs
 		for end_point in end_points:
 			x = end_points[end_point]
 			summaries.add(tf.summary.histogram('activations/' + end_point, x))
 			summaries.add(tf.summary.scalar('sparsity/' + end_point,
 											tf.nn.zero_fraction(x)))
+		'''
 
 		#for loss in tf.get_collection(tf.GraphKeys.LOSSES):
 		#	summaries.add(tf.summary.scalar(loss.op.name, loss))
@@ -290,9 +293,10 @@ def main(_):
 		for loss in tf.get_collection('EXTRA_LOSSES',first_clone_scope):
 			summaries.add(tf.summary.scalar(loss.op.name, loss))
 
+		'''
 		for variable in slim.get_model_variables():
 			summaries.add(tf.summary.histogram(variable.op.name, variable))
-
+		'''
 		#################################
 		# Configure the moving averages #
 		#################################
@@ -311,7 +315,7 @@ def main(_):
 															 FLAGS.num_samples,
 															 global_step)
 			optimizer = tf_utils.configure_optimizer(FLAGS, learning_rate)
-			summaries.add(tf.summary.scalar('learning_rate', learning_rate))
+			#summaries.add(tf.summary.scalar('learning_rate', learning_rate))
 
 		if FLAGS.moving_average_decay:
 			# Update ops executed locally by trainer.
@@ -326,7 +330,7 @@ def main(_):
 			optimizer,
 			var_list=variables_to_train)
 		# Add total_loss to summary.
-		summaries.add(tf.summary.scalar('total_loss', total_loss))
+		#summaries.add(tf.summary.scalar('total_loss', total_loss))
 
 		# Create gradient updates.
 		grad_updates = optimizer.apply_gradients(clones_gradients,
@@ -339,8 +343,8 @@ def main(_):
 
 		# Add the summaries from the first clone. These contain the summaries
 		# created by model_fn and either optimize_clones() or _gather_clone_loss().
-		summaries |= set(tf.get_collection(tf.GraphKeys.SUMMARIES,
-										   first_clone_scope))
+		#summaries |= set(tf.get_collection(tf.GraphKeys.SUMMARIES,
+		#								   first_clone_scope))
 
 		# Merge all summaries together.
 		summary_op = tf.summary.merge(list(summaries), name='summary_op')

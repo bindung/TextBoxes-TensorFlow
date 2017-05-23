@@ -46,18 +46,18 @@ class TextboxNet(object):
 	  conv8_2 ==> 3 x 3
 	  pool6 ==> 1 x 1
 	anchor_sizes=[(21., 45.),
-          (45., 99.),
-          (99., 153.),
-          (153., 207.),
-          (207., 261.),
-          (261., 315.)],
+		  (45., 99.),
+		  (99., 153.),
+		  (153., 207.),
+		  (207., 261.),
+		  (261., 315.)],
 
 	anchor_sizes=[(30., 60.),
-              (60., 114.),
-              (114., 168.),
-              (168., 222.),
-              (222., 276.),
-              (276., 330.)],
+			  (60., 114.),
+			  (114., 168.),
+			  (168., 222.),
+			  (222., 276.),
+			  (276., 330.)],
 	The default image size used to train this network is 300x300.
 	"""
 	default_params = TextboxParams(
@@ -70,11 +70,11 @@ class TextboxNet(object):
 		normalizations=[20, -1, -1, -1, -1, -1],
 		prior_scaling=[0.1, 0.1, 0.2, 0.2],
 		anchor_sizes=[(21., 45.),
-			          (45., 99.),
-			          (99., 153.),
-			          (153., 207.),
-			          (207., 261.),
-			          (261., 315.)],
+					  (45., 99.),
+					  (99., 153.),
+					  (153., 207.),
+					  (207., 261.),
+					  (261., 315.)],
 		anchor_steps=[8, 16, 30, 60, 100, 300],
 		scales = [0.2 + i*0.8/5  for i in range(6)],
 		#scales = [0.05, 0.1,0.15,0.25,0.4,0.65],
@@ -139,6 +139,36 @@ class TextboxNet(object):
 						match_threshold=self.params.match_threshold,
 						prior_scaling=self.params.prior_scaling,
 						scope=scope)
+
+	def bboxes_decode(self, feat_localizations, anchors, scope='ssd_bboxes_decode'):
+		"""Encode labels and bounding boxes.
+		"""
+		return textbox_common.tf_ssd_bboxes_decode(
+			feat_localizations, anchors,
+			prior_scaling=self.params.prior_scaling,
+			scope=scope)
+
+	def detected_bboxes(self, predictions, localisations,
+						select_threshold=None, nms_threshold=0.5,
+						clipping_bbox=None, top_k=400, keep_top_k=200):
+		"""Get the detected bounding boxes from the SSD network output.
+		"""
+		# Select top_k bboxes from predictions, and clip
+		rscores, rbboxes = \
+			textbox_common.tf_ssd_bboxes_select(predictions, localisations,
+											select_threshold=select_threshold,
+											num_classes=self.params.num_classes)
+		rscores, rbboxes = \
+			tfe.bboxes_sort(rscores, rbboxes, top_k=top_k)
+		# Apply NMS algorithm.
+		rscores, rbboxes = \
+			tfe.bboxes_nms_batch(rscores, rbboxes,
+								 nms_threshold=nms_threshold,
+								 keep_top_k=keep_top_k)
+		if clipping_bbox is not None:
+			rbboxes = tfe.bboxes_clip(clipping_bbox, rbboxes)
+		return rscores, rbboxes
+
 
 	def losses(self, logits, localisations,
 			   glocalisations, gscores,
@@ -384,17 +414,17 @@ def text_losses(logits, localisations,
 		pmask = allgscores > match_threshold
 		ipmask = tf.cast(pmask ,tf.int32)
 		n_pos = tf.reduce_sum(ipmask)+1
-		num = tf.ones_like(allgscores)
-		n = tf.reduce_sum(num)
+		#num = tf.ones_like(allgscores)
+		#n = tf.reduce_sum(num)
 		fpmask = tf.cast(pmask , tf.float32)
 		nmask = allgscores <= match_threshold
-
+		inmask = tf.cast(nmask, tf.int32)
 
 		loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=alllogits,labels=ipmask)
 		l_cross_pos = tf.losses.compute_weighted_loss(loss, fpmask)
 
 
-		'''
+		
 		loss_neg = tf.where(pmask,
 						   tf.cast(tf.zeros_like(ipmask),tf.float32),
 						   loss)
@@ -403,9 +433,9 @@ def text_losses(logits, localisations,
 		val, idxes = tf.nn.top_k(loss_neg_flat, k=n_neg)
 		minval = val[-1]
 		nmask = tf.logical_and(nmask, loss_neg >= minval)
-		'''
-		inmask = tf.cast(nmask, tf.int32)
-		n_neg = tf.reduce_sum(inmask)
+		
+
+		n_neg = tf.reduce_sum(tf.cast(nmask, tf.int32))
 		fnmask = tf.cast(nmask, tf.float32)
 
 		#l_cross_neg = tf.reduce_sum(loss * fnmask)/tf.cast(n_neg, tf.float32)
