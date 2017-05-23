@@ -181,6 +181,7 @@ class TextboxNet(object):
 		return text_losses(logits, localisations,
 						  glocalisations, gscores,
 						  match_threshold=self.params.match_threshold,
+						  use_hard_neg=False,
 						  negative_ratio=negative_ratio,
 						  alpha=alpha,
 						  label_smoothing=label_smoothing,
@@ -391,6 +392,7 @@ def ssd_arg_scope(weight_decay=0.0005, data_format='NHWC'):
 def text_losses(logits, localisations,
 			   glocalisations, gscores,
 			   match_threshold,
+			   use_hard_neg=False,
 			   negative_ratio=3.,
 			   alpha=1.,
 			   label_smoothing=0.,
@@ -424,23 +426,23 @@ def text_losses(logits, localisations,
 		l_cross_pos = tf.losses.compute_weighted_loss(loss, fpmask)
 
 
-		
-		loss_neg = tf.where(pmask,
-						   tf.cast(tf.zeros_like(ipmask),tf.float32),
-						   loss)
-		loss_neg_flat = tf.reshape(loss_neg, [-1])
-		n_neg = tf.minimum(3*n_pos, tf.cast(n,tf.int32))
-		val, idxes = tf.nn.top_k(loss_neg_flat, k=n_neg)
-		minval = val[-1]
-		nmask = tf.logical_and(nmask, loss_neg >= minval)
+		#l_cross_neg = tf.reduce_sum(loss * fnmask)/tf.cast(n_neg, tf.float32)
+		#l_cross_pos = tf.reduce_sum(loss * fpmask)/tf.cast(n_pos, tf.float32)
+		loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=-alllogits,labels=inmask)
+
+		if use_hard_neg:
+			loss_neg = tf.where(pmask,
+							   tf.cast(tf.zeros_like(ipmask),tf.float32),
+							   loss)
+			loss_neg_flat = tf.reshape(loss_neg, [-1])
+			n_neg = tf.minimum(3*n_pos, tf.cast(n,tf.int32))
+			val, idxes = tf.nn.top_k(loss_neg_flat, k=n_neg)
+			minval = val[-1]
+			nmask = tf.logical_and(nmask, loss_neg >= minval)
 		
 
 		n_neg = tf.reduce_sum(tf.cast(nmask, tf.int32))
 		fnmask = tf.cast(nmask, tf.float32)
-
-		#l_cross_neg = tf.reduce_sum(loss * fnmask)/tf.cast(n_neg, tf.float32)
-		#l_cross_pos = tf.reduce_sum(loss * fpmask)/tf.cast(n_pos, tf.float32)
-		loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=-alllogits,labels=inmask)
 		l_cross_neg = tf.losses.compute_weighted_loss(loss, fnmask)
 		
 
