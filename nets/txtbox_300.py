@@ -415,7 +415,7 @@ def text_losses(logits, localisations,
 		ipmask = tf.cast(pmask ,tf.int32)
 		n_pos = tf.reduce_sum(ipmask)+1
 		#num = tf.ones_like(allgscores)
-		#n = tf.reduce_sum(num)
+		n = tf.reduce_sum(num)
 		fpmask = tf.cast(pmask , tf.float32)
 		nmask = allgscores <= match_threshold
 		inmask = tf.cast(nmask, tf.int32)
