@@ -177,7 +177,9 @@ tf.app.flags.DEFINE_string(
 tf.app.flags.DEFINE_boolean(
     'ignore_missing_vars', False,
     'When restoring a checkpoint would ignore missing variables.')
-
+tf.app.flags.DEFINE_boolean(
+    'fine_tune', False,
+    'Weather use fine_tune')
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -263,7 +265,10 @@ def main(_):
             ## Training 
             #loss = tf.get_collection(tf.GraphKeys.LOSSES)
             #total_loss = tf.add_n(loss)
-            gradient_multipliers = pickle.load(open('nets/multiplier_300.pkl','rb'))
+            if fine_tune:
+                gradient_multipliers = pickle.load(open('nets/multiplier_300.pkl','rb'))
+            else:
+                gradient_multipliers = None
             train_op = slim.learning.create_train_op(total_loss, optimizer, gradient_multipliers=gradient_multipliers)
 
         # =================================================================== #

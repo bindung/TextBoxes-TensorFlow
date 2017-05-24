@@ -177,7 +177,7 @@ def preprocess_for_eval(image, labels, bboxes,
 
         image = tf.to_float(image)
         num = 0
-        if labels is None:
+        if labels is not None:
             num = tf.reduce_sum(tf.cast(labels, tf.int32))
         # Add image rectangle to bboxes.
         bbox_img = tf.constant([[0., 0., 1., 1.]])
