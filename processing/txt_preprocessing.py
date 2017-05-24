@@ -135,7 +135,7 @@ def preprocess_for_train(image, labels, bboxes,
                                           align_corners=False)
         
         dst_image, bboxes = tf_image.random_flip_left_right(dst_image, bboxes)
-        dst_image.set_shape([out_shape[0], out_shape[1], 3])
+        #dst_image.set_shape([out_shape[0], out_shape[1], 3])
         #bbox_image = tf.image.draw_bounding_boxes(tf.expand_dims(dst_image,0), tf.expand_dims(bboxes,0))
         #tf.summary.image('image_with_box', bbox_image)
 
@@ -149,8 +149,8 @@ def preprocess_for_train(image, labels, bboxes,
         '''
         image = dst_image *255
         image.set_shape([out_shape[0], out_shape[1], 3])
-        #image = tf_image.tf_image_whitened(image, [_R_MEAN, _G_MEAN, _B_MEAN])
-        #image = image/255.0
+        image = tf_image.tf_image_whitened(image, [_R_MEAN, _G_MEAN, _B_MEAN])
+        image = image/255.0
 
         return image, labels, bboxes,num
 
@@ -223,8 +223,8 @@ def preprocess_for_eval(image, labels, bboxes,
             labels = tf.boolean_mask(labels, mask)
             bboxes = tf.boolean_mask(bboxes, mask)
         # Image data format.
-        #image = tf_image.tf_image_whitened(image, [_R_MEAN, _G_MEAN, _B_MEAN])
-        #image = image/255.0
+        image = tf_image.tf_image_whitened(image, [_R_MEAN, _G_MEAN, _B_MEAN])
+        image = image/255.0
         return image, labels, bboxes, bbox_img, num
 
 def preprocess_image(image,
