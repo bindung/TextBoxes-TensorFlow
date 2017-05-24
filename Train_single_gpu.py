@@ -265,7 +265,7 @@ def main(_):
             ## Training 
             #loss = tf.get_collection(tf.GraphKeys.LOSSES)
             #total_loss = tf.add_n(loss)
-            if fine_tune:
+            if FLAGS.fine_tune:
                 gradient_multipliers = pickle.load(open('nets/multiplier_300.pkl','rb'))
             else:
                 gradient_multipliers = None
