@@ -133,7 +133,7 @@ tf.app.flags.DEFINE_boolean(
 	'use_batch', False,
 	'Wheather use batch_norm or not')
 tf.app.flags.DEFINE_boolean(
-	'use_hard_neg', False,
+	'use_hard_neg', True,
 	'Wheather use use_hard_neg or not')
 
 # =========================================================================== #

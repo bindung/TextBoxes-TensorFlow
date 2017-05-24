@@ -23,7 +23,7 @@ tf.app.flags.DEFINE_float(
 tf.app.flags.DEFINE_float(
     'negative_ratio', 3., 'Negative ratio in the loss function.')
 tf.app.flags.DEFINE_boolean(
-    'use_hard_neg', False,
+    'use_hard_neg', True,
     'Wheather use use_hard_neg or not')
 tf.app.flags.DEFINE_boolean(
     'use_batch', False,
