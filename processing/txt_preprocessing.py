@@ -149,8 +149,8 @@ def preprocess_for_train(image, labels, bboxes,
         '''
         image = dst_image *255
         image.set_shape([out_shape[0], out_shape[1], 3])
-        image = tf_image.tf_image_whitened(image, [_R_MEAN, _G_MEAN, _B_MEAN])
-        image = image/255.0
+        #image = tf_image.tf_image_whitened(image, [_R_MEAN, _G_MEAN, _B_MEAN])
+        #image = image/255.0
 
         return image, labels, bboxes,num
 
@@ -223,8 +223,8 @@ def preprocess_for_eval(image, labels, bboxes,
             labels = tf.boolean_mask(labels, mask)
             bboxes = tf.boolean_mask(bboxes, mask)
         # Image data format.
-        image = tf_image.tf_image_whitened(image, [_R_MEAN, _G_MEAN, _B_MEAN])
-        image = image/255.0
+        #image = tf_image.tf_image_whitened(image, [_R_MEAN, _G_MEAN, _B_MEAN])
+        #image = image/255.0
         return image, labels, bboxes, bbox_img, num
 
 def preprocess_image(image,
