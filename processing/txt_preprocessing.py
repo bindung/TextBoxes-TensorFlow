@@ -134,34 +134,24 @@ def preprocess_for_train(image, labels, bboxes,
                                           method=tf.image.ResizeMethod.BILINEAR,
                                           align_corners=False)
         
-        '''
-        dst_image ,bboxes = \
-        tf_image.resize_image_bboxes_with_crop_or_pad(image, bboxes,
-                                                    out_shape[0],out_shape[1])
-        
-        '''
-        # Randomly flip the image horizontally.
         dst_image, bboxes = tf_image.random_flip_left_right(dst_image, bboxes)
-
+        dst_image.set_shape([out_shape[0], out_shape[1], 3])
         #bbox_image = tf.image.draw_bounding_boxes(tf.expand_dims(dst_image,0), tf.expand_dims(bboxes,0))
         #tf.summary.image('image_with_box', bbox_image)
-        #tf.add_to_collection('EXTRA_LOSSES', num)
 
-        
+        '''
         dst_image = tf_image.apply_with_random_selector(
                 dst_image,
                 lambda x, ordering: tf_image.distort_color_2(x, ordering, False),
                 num_cases=4)
         
         # Rescale to normal range
+        '''
         image = dst_image *255
         image.set_shape([out_shape[0], out_shape[1], 3])
-        image = tf_image.tf_image_whitened(image, [_R_MEAN, _G_MEAN, _B_MEAN])
-        #tf_image.tf_summary_image(image, bboxes, 'image_color_distorted')
-        #bboxes = tf.minimum(bboxes, 1.0)
-        #bboxes = tf.maximum(bboxes, 0.0)
-        image = image/255.0
-        #dst_image = tf.cast(dst_image,tf.float32)
+        #image = tf_image.tf_image_whitened(image, [_R_MEAN, _G_MEAN, _B_MEAN])
+        #image = image/255.0
+
         return image, labels, bboxes,num
 
 
