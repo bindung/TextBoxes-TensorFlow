@@ -1,4 +1,4 @@
-I##This program change the ground truth file in ICDAR test to tfrecord
+##This program change the ground truth file in ICDAR test to tfrecord
 
 import numpy as np 
 import os, os.path
