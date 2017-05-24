@@ -237,7 +237,7 @@ def main(_):
 
         # Gather summaries.
         summaries = set(tf.get_collection(tf.GraphKeys.SUMMARIES))
-
+        '''
         for end_point in end_points:
             x = end_points[end_point]
             summaries.add(tf.summary.histogram('activations/' + end_point, x))
@@ -246,13 +246,14 @@ def main(_):
 
         #for loss in tf.get_collection(tf.GraphKeys.LOSSES):
         #   summaries.add(tf.summary.scalar(loss.op.name, loss))
-
+        '''
         for loss in tf.get_collection('EXTRA_LOSSES'):
             summaries.add(tf.summary.scalar(loss.op.name, loss))
 
+        '''
         for variable in slim.get_model_variables():
             summaries.add(tf.summary.histogram(variable.op.name, variable))
-
+        '''
 
         with tf.device(FLAGS.gpu_train):
             learning_rate = tf_utils.configure_learning_rate(FLAGS,
