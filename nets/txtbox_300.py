@@ -428,11 +428,11 @@ def text_losses(logits, localisations,
 		l_cross_pos = tf.losses.compute_weighted_loss(loss, fpmask)
 
 
-		loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=alllogits,labels=ipmask)
+		#loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=alllogits,labels=ipmask)
 		l_cross_all_neg = tf.losses.compute_weighted_loss(loss, fnmask)
 		#l_cross_neg = tf.reduce_sum(loss * fnmask)/tf.cast(n_neg, tf.float32)
 		#l_cross_pos = tf.reduce_sum(loss * fpmask)/tf.cast(n_pos, tf.float32)
-		loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=-alllogits,labels=inmask)
+		#loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=alllogits,labels=ipmask)
 
 		if use_hard_neg:
 			loss_neg = tf.where(pmask,
