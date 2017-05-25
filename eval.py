@@ -14,7 +14,7 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
 import load_batch
 from nets import txtbox_300
-
+from nets import nets_factory
 slim = tf.contrib.slim
 
 # =========================================================================== #
@@ -46,6 +46,8 @@ tf.app.flags.DEFINE_boolean(
 	'remove_difficult', True, 'Remove difficult objects from evaluation.')
 tf.app.flags.DEFINE_integer(
 	'num_samples', 229, 'number of dataset size')
+tf.app.flags.DEFINE_string(
+    'model_name', 'txtbox_300', 'The name of the architecture to evaluate.')
 
 
 # =========================================================================== #
@@ -104,7 +106,8 @@ def main(_):
 		tf_global_step = slim.get_or_create_global_step()
 
 		# initalize the net
-		net = txtbox_300.TextboxNet()
+		network_fn = nets_factory.get_network(FLAGS.model_name)
+		net = network_fn()
 		out_shape = net.params.img_shape
 		anchors = net.anchors(out_shape)
 		# =================================================================== #
@@ -167,9 +170,6 @@ def main(_):
 		# =================================================================== #
 		with tf.device(FLAGS.gpu_eval):
 			dict_metrics = {}
-			# First add all losses.
-			for loss in tf.get_collection(tf.GraphKeys.LOSSES):
-				dict_metrics[loss.op.name] = slim.metrics.streaming_mean(loss)
 			# Extra losses as well.
 			for loss in tf.get_collection('EXTRA_LOSSES'):
 				dict_metrics[loss.op.name] = slim.metrics.streaming_mean(loss)
@@ -196,6 +196,10 @@ def main(_):
 
 				# Average precision VOC07.
 				v = tfe.average_precision_voc07(prec, rec)
+				op = tf.summary.scalar('precision', prec, collections=[])
+				tf.add_to_collection(tf.GraphKeys.SUMMARIES, op)
+				op = tf.summary.scalar('recall', rec, collections=[])
+				tf.add_to_collection(tf.GraphKeys.SUMMARIES, op)				
 				summary_name = 'ICDAR13/%s' % c
 				op = tf.summary.scalar(summary_name, v, collections=[])
 				# op = tf.Print(op, [v], summary_name)

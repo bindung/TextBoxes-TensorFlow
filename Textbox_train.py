@@ -13,6 +13,7 @@ import tf_utils
 from deployment import model_deploy
 import load_batch
 from nets import txtbox_300
+from nets import nets_factory
 
 slim = tf.contrib.slim
 # =========================================================================== #
@@ -153,7 +154,7 @@ tf.app.flags.DEFINE_integer(
 	'evaluate the VGG and ResNet architectures which do not use a background '
 	'class for the ImageNet dataset.')
 tf.app.flags.DEFINE_string(
-	'model_name', 'text_box_300', 'The name of the architecture to train.')
+	'model_name', 'txtbox_300', 'The name of the architecture to train.')
 tf.app.flags.DEFINE_string(
 	'preprocessing_name', None, 'The name of the preprocessing to use. If left '
 	'as `None`, then the model_name flag is used.')
@@ -214,11 +215,11 @@ def main(_):
 			global_step = slim.create_global_step()
 
 
-
-		params = txtbox_300.TextboxNet.default_params
+		network_fn = nets_factory.get_network(FLAGS.model_name)
+		params = network_fn.default_params
 		params = params._replace( match_threshold=FLAGS.match_threshold)
 		# initalize the net
-		net = txtbox_300.TextboxNet(params)
+		net = network_fn(params)
 		out_shape = net.params.img_shape
 		anchors = net.anchors(out_shape)
 
@@ -319,7 +320,7 @@ def main(_):
 															 FLAGS.num_samples,
 															 global_step)
 			optimizer = tf_utils.configure_optimizer(FLAGS, learning_rate)
-			#summaries.add(tf.summary.scalar('learning_rate', learning_rate))
+			summaries.add(tf.summary.scalar('learning_rate', learning_rate))
 
 		if FLAGS.moving_average_decay:
 			# Update ops executed locally by trainer.

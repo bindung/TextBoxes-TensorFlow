@@ -40,7 +40,7 @@ _B_MEAN = 104.
 
 # Some training pre-processing parameters.
 BBOX_CROP_OVERLAP = 0.1       # Minimum overlap to keep a bbox after cropping.
-CROP_RATIO_RANGE = (0.3, 2.0)  # Distortion ratio during cropping.
+CROP_RATIO_RANGE = (0.3, 2.)  # Distortion ratio during cropping.
 EVAL_SIZE = (300, 300)
 
 
@@ -139,19 +139,18 @@ def preprocess_for_train(image, labels, bboxes,
         #bbox_image = tf.image.draw_bounding_boxes(tf.expand_dims(dst_image,0), tf.expand_dims(bboxes,0))
         #tf.summary.image('image_with_box', bbox_image)
 
-        '''
+        
         dst_image = tf_image.apply_with_random_selector(
                 dst_image,
                 lambda x, ordering: tf_image.distort_color_2(x, ordering, False),
                 num_cases=4)
         
         # Rescale to normal range
-        '''
+        
         image = dst_image *255
         image.set_shape([out_shape[0], out_shape[1], 3])
         image = tf_image.tf_image_whitened(image, [_R_MEAN, _G_MEAN, _B_MEAN])
         image = image/255.0
-
         return image, labels, bboxes,num
 
 

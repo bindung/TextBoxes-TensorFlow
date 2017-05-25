@@ -4,7 +4,7 @@ import os, os.path
 import sys
 sys.path.insert(0,'../processing/')
 sys.path.insert(0,'../')
-from nets import txtbox_300, textbox_common, np_methods
+from nets import txtbox_300, textbox_common, np_methods,txtbox512
 #from processing import image_processing
 from image_processing2 import *
 from processing import ssd_vgg_preprocessing, visualization,txt_preprocessing
@@ -15,23 +15,23 @@ import numpy as np
 
 
 match_threshold = [0.5]
-scales_range = [0.05,0.1,0.15,0.2]
+min_scala= np.linspace(start=0.08,stop=0.16,num=9)
+max_scala= np.linspace(start=0.6,stop=0.9,num=7)
 thres = []
 ran = []
 sum_error = []
-for threshold in match_threshold:
-	for s in scales_range:
-		scales = [s + i*(0.6 - s)/5  for i in range(6)]
+for min_s in min_scala:
+	for max_s in max_scala:
+		scales = [min_s + i*(max_s - min_s)/6  for i in range(7)]
+		anchor_sizes = [(512*scales[i], 512*scales[i] + 50) for i in range(7)]
 		with tf.Graph().as_default(): 
 			# build a net
-			params = txtbox_300.TextboxNet.default_params
-			params = params._replace( match_threshold=threshold)
-			params = params._replace( scales=scales)
-			text_net = txtbox_300.TextboxNet(params)
+			params = txtbox512.TextboxNet.default_params
+			params = params._replace(anchor_sizes = anchor_sizes)
+			text_net = txtbox512.TextboxNet(params)
 			text_shape = text_net.params.img_shape
 			print 'text_shape '+  str(text_shape)
 			text_anchors = text_net.anchors(text_shape)
-			print text_net.params.match_threshold
 			
 			## dataset provider
 			dataset = sythtextprovider.get_datasets('../data/ICDAR2013/',file_pattern='*.tfrecord')
@@ -58,13 +58,13 @@ for threshold in match_threshold:
 				sess.run(tf.global_variables_initializer())
 				with slim.queues.QueueRunners(sess):
 					error = []
-					for i in xrange(229):
-						rpredictions, rlocalisations, img ,gbboxes_= sess.run([gscores, glocalisations,dst_image,gbboxes])
-						rpredictions_2 = list(rpredictions)
-						localb = []
+					for i in xrange(500):
+						rpredictions, rlocalisations,gbboxes_= sess.run([gscores, glocalisations,gbboxes])
+						#rpredictions_2 = list(rpredictions)
+						#localb = []
 						for i in range(6):
-							decodeb = np_methods.ssd_bboxes_decode(rlocalisations[i],text_anchors[i])
-							localb.append(decodeb[np.where(rpredictions[i] > 0.2)])
+							#decodeb = np_methods.ssd_bboxes_decode(rlocalisations[i],text_anchors[i])
+							#localb.append(decodeb[np.where(rpredictions[i] > 0.2)])
 							pre2 = np.expand_dims(1-rpredictions[i], -1)
 							rpredictions[i] = np.concatenate([pre2, np.expand_dims(rpredictions[i], -1)],axis = -1)
 						rclasses, rscores, rbboxes = np_methods.ssd_bboxes_select(
@@ -76,20 +76,12 @@ for threshold in match_threshold:
 						rclasses, rscores, rbboxes = np_methods.bboxes_nms(rclasses, rscores, rbboxes, 
 																		  nms_threshold=0.45)
 						#Resize bboxes to original image shape. Note: useless for Resize.WARP!
-						bboxes = np.concatenate(localb, 0)
-						image_ = np.uint8(img)*255
-						'''
-						img = image_.copy()
-						visualize_bbox(img, rbboxes)
-						img = image_.copy()
-						visualize_bbox(img, bboxes)
-						img = image_.copy()
-						visualize_bbox(img, gbboxes_)
-						'''
+						#bboxes = np.concatenate(localb, 0)
+
 						error.append((gbboxes_.shape[0] - rbboxes.shape[0]))
-					print "THe match_threshold is %s with range %s, error is %s" %(threshold, s, sum(error))
+					print "THe match_threshold is %s with range %s, error is %s" %(min_s, max_s, sum(error))
 					sum_error.append(sum(error))
-					thres.append(threshold)
-					ran.append(s)
+					thres.append(min_s)
+					ran.append(max_s)
 result = np.stack([sum_error, thres, ran]).T
-np.savetxt(fname='result.csv',X=result, delimiter=',',fmt='%.4f')
+np.savetxt(fname='result.csv',X=result, delimiter=',',fmt='%.2f')

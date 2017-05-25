@@ -211,7 +211,6 @@ def textbox_anchor_one_layer(img_shape,
                              ratios,
                              scale,
                              sizes,
-                             step,
                              offset = 0.5,
                              dtype=np.float32):
     # Follow the papers scheme
@@ -251,7 +250,6 @@ def textbox_achor_all_layers(img_shape,
                            anchor_ratios,
                            scales,
                            anchor_sizes,
-                           anchor_steps,
                            offset=0.5,
                            dtype=np.float32):
     """
@@ -263,7 +261,6 @@ def textbox_achor_all_layers(img_shape,
                                                  anchor_ratios,
                                                  scales[i],
                                                  anchor_sizes[i],
-                                                 anchor_steps[i],
                                                  offset=offset, dtype=dtype)
         layers_anchors.append(anchor_bboxes)
     return layers_anchors

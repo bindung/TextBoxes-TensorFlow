@@ -29,7 +29,6 @@ TextboxParams = namedtuple('TextboxParameters',
 										 'normalizations',
 										 'prior_scaling',
 										 'anchor_sizes',
-										 'anchor_steps',
 										 'scales',
 										 'match_threshold'
 										 ])
@@ -61,22 +60,22 @@ class TextboxNet(object):
 	The default image size used to train this network is 300x300.
 	"""
 	default_params = TextboxParams(
-		img_shape=(300, 300),
+		img_shape=(512, 512),
 		num_classes=2,
-		feat_layers=['conv4', 'conv7', 'conv8', 'conv9', 'conv10', 'global'],
-		feat_shapes=[(38, 38), (19, 19), (10, 10), (5, 5), (3, 3), (1, 1)],
-		scale_range=[0.2, 0.95],
-		anchor_ratios=[1,2,3,5,7,10],
-		normalizations=[20, -1, -1, -1, -1, -1],
+		feat_layers=['conv4', 'conv7', 'conv8', 'conv9', 'conv10', 'conv11','conv12'],
+		feat_shapes=[(64, 64), (32, 32), (16, 16), (8, 8), (4, 4), (2, 2), (1, 1)],
+		scale_range=[0.15, 0.95],
+		anchor_ratios=[1,1.5,2,3,5,7,10],
+		normalizations=[20, -1, -1, -1, -1, -1,-1],
 		prior_scaling=[0.1, 0.1, 0.2, 0.2],
-		anchor_sizes=[(21., 45.),
-					  (45., 99.),
-					  (99., 153.),
-					  (153., 207.),
-					  (207., 261.),
-					  (261., 315.)],
-		anchor_steps=[8, 16, 30, 60, 100, 300],
-		scales = [0.2 + i*0.8/5  for i in range(6)],
+		anchor_sizes=[(23., 51.),
+		              (51., 99.),
+		              (133., 153.),
+		              (215., 207.),
+		              (296., 261.),
+		              (379., 315.),
+		              (461., 543.)],
+		scales = [0.09 + i*0.66/6  for i in range(7)],
 		#scales = [0.05, 0.1,0.15,0.25,0.4,0.65],
 		match_threshold = 0.5
 		)
@@ -96,7 +95,7 @@ class TextboxNet(object):
 			is_training=True,
 			dropout_keep_prob=0.5,
 			reuse=None,
-			scope='text_box_300',
+			scope='text_box_512',
 			use_batch=False):
 		"""
 		Text network definition.
@@ -199,7 +198,7 @@ def text_net(inputs,
 			scope='text_box_300'):
 	batch_norm_params = {
 	  # Decay for the moving averages.
-	  'decay': 0.9997,
+	  'decay': 0.997,
 	  # epsilon to prevent 0s in variance.
 	  'epsilon': 0.001,
 	  'is_training': is_training
@@ -225,12 +224,12 @@ def text_net(inputs,
 		# Block 5. # 19 19 512
 		net = slim.repeat(net, 3, slim.conv2d, 512, [3, 3], scope='conv5')
 		end_points['conv5'] = net
-		net = slim.max_pool2d(net, [2, 2], stride=1, scope='pool5',padding='SAME')
+		net = slim.max_pool2d(net, [3, 3], stride=1, scope='pool5',padding='SAME')
 
 		# Additional SSD blocks.
 		# Block 6: let's dilate the hell out of it!
 		#net = slim.conv2d(net, 1024, [3, 3], scope='conv6')
-		net = conv2d(net, 1024, [3,3], scope='conv6',use_batch=use_batch, batch_norm_params= batch_norm_params)
+		net = conv2d(net, 1024, [3,3], scope='conv6',rate = 6, use_batch=use_batch, batch_norm_params= batch_norm_params)
 		end_points['conv6'] = net
 		# Block 7: 1x1 conv. Because the fuck.
 		#net = slim.conv2d(net, 1024, [1, 1], scope='conv7')
@@ -254,10 +253,15 @@ def text_net(inputs,
 			net = conv2d(net, 128, [1, 1], scope='conv1x1',use_batch=use_batch, batch_norm_params=batch_norm_params)
 			net = conv2d(net, 256, [3, 3], stride=2, scope='conv3x3',use_batch=use_batch, batch_norm_params=batch_norm_params)
 		end_points[end_point] = net
-		end_point = 'global'
+		end_point = 'conv11'
 		with tf.variable_scope(end_point):
 			net = conv2d(net, 128, [1, 1], scope='conv1x1',use_batch=use_batch, batch_norm_params=batch_norm_params)
 			net = conv2d(net, 256, [3, 3], scope='conv3x3', padding='VALID',use_batch=use_batch, batch_norm_params=batch_norm_params)
+		end_points[end_point] = net
+
+		end_point = 'conv12'
+		with tf.variable_scope(end_point):
+			net = slim.avg_pool2d(net, [2,2], scope='pool6', padding = 'VALID')
 		end_points[end_point] = net
 
 		print end_points
@@ -279,12 +283,12 @@ def text_net(inputs,
 		return localisations, logits, end_points
 
 def conv2d(inputs, out, kernel_size, scope,stride=1,activation_fn=tf.nn.relu, 
-			padding = 'SAME', use_batch=False, batch_norm_params={}):
+			padding = 'SAME',rate = 1,use_batch=False, batch_norm_params={}):
 	if use_batch:
 		net = slim.conv2d(inputs, out, kernel_size, stride=stride ,scope=scope, normalizer_fn=slim.batch_norm, 
-			  normalizer_params=batch_norm_params, activation_fn=activation_fn ,padding = padding)
+			  normalizer_params=batch_norm_params, activation_fn=activation_fn ,padding = padding, rate = rate)
 	else:
-		net = slim.conv2d(inputs, out, kernel_size, stride=stride, scope=scope, activation_fn=activation_fn,padding = padding)
+		net = slim.conv2d(inputs, out, kernel_size, stride=stride, scope=scope, activation_fn=activation_fn,padding = padding, rate=rate)
 	return net
 
 
@@ -303,7 +307,7 @@ def text_multibox_layer(layer,
 	"""
 	batch_norm_params = {
 	  # Decay for the moving averages.
-	  'decay': 0.997,
+	  'decay': 0.9990,
 	  # epsilon to prevent 0s in variance.
 	  'epsilon': 0.001,
 	  'is_training': is_training
@@ -317,11 +321,8 @@ def text_multibox_layer(layer,
 	# Location.
 	num_loc_pred = 2*num_box * 4
 
-	if(layer == 'global'):
-		loc_pred = conv2d(net, num_loc_pred, [1, 1], activation_fn=None, padding = 'VALID',
-						   scope='conv_loc',use_batch=False, batch_norm_params=batch_norm_params)
-	else:
-		loc_pred = conv2d(net, num_loc_pred, [1, 5], activation_fn=None, padding = 'SAME',
+
+	loc_pred = conv2d(net, num_loc_pred, [1, 5], activation_fn=None, padding = 'SAME',
 						   scope='conv_loc',use_batch=False, batch_norm_params=batch_norm_params)
 
 	loc_pred = custom_layers.channel_to_last(loc_pred)
@@ -329,11 +330,8 @@ def text_multibox_layer(layer,
 	# Class prediction.
 	scores_pred = 2 * num_box * num_classes
 
-	if(layer == 'global'):
-		sco_pred = conv2d(net, scores_pred, [1, 1], activation_fn=None, padding = 'VALID',
-						   scope='conv_cls',use_batch=use_batch, batch_norm_params=batch_norm_params)
-	else:
-		sco_pred = conv2d(net, scores_pred, [1, 5], activation_fn=None, padding = 'SAME',
+
+	sco_pred = conv2d(net, scores_pred, [1, 5], activation_fn=None, padding = 'SAME',
 						   scope='conv_cls',use_batch=use_batch, batch_norm_params=batch_norm_params)
 
 	sco_pred = custom_layers.channel_to_last(sco_pred)
@@ -372,8 +370,8 @@ def ssd_arg_scope(weight_decay=0.0005, data_format='NHWC'):
 	with slim.arg_scope([slim.conv2d, slim.fully_connected],
 						activation_fn=tf.nn.relu,
 						weights_regularizer=slim.l2_regularizer(weight_decay),
-						#weights_initializer=tf.truncated_normal_initializer(stddev=0.03, seed = 1000),
-						weights_initializer=tf.contrib.layers.xavier_initializer(),
+						weights_initializer=tf.truncated_normal_initializer(stddev=0.03, seed = 1000),
+						#weights_initializer=tf.contrib.layers.xavier_initializer(),
 						biases_initializer=tf.zeros_initializer()):
 		with slim.arg_scope([slim.conv2d, slim.max_pool2d],
 							padding='SAME',
