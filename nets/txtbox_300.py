@@ -446,8 +446,11 @@ def text_losses(logits, localisations,
 
 			fnmask = tf.cast(nmask, tf.float32)
 			l_cross_neg = tf.losses.compute_weighted_loss(loss, fnmask)
+		else:
+			l_cross_neg = 0.
 		n_neg = tf.reduce_sum(tf.cast(nmask, tf.int32))
 
+		l_cross_neg = l_cross_all_neg + l_cross_neg
 
 
 		#all_mask = tf.logical_or(pmask, nmask)
@@ -470,18 +473,15 @@ def text_losses(logits, localisations,
 				l_cross_neg = tf.identity(l_cross_neg, name = 'l_cross_neg')
 				l_cross_pos = tf.identity(l_cross_pos, name = 'l_cross_pos')
 				l_loc = tf.identity(l_loc, name = 'l_loc')
-				l_cross_all_neg = tf.identity(l_cross_all_neg, name = 'l_cross_all_neg')
 				tf.add_to_collection('EXTRA_LOSSES', n_pos)
 				tf.add_to_collection('EXTRA_LOSSES', n_neg)
 				tf.add_to_collection('EXTRA_LOSSES', l_cross_pos)
 				tf.add_to_collection('EXTRA_LOSSES', l_cross_neg)
 				tf.add_to_collection('EXTRA_LOSSES', l_loc)
-				tf.add_to_collection('EXTRA_LOSSES', l_cross_all_neg)
 				tf.add_to_collection('EXTRA_LOSSES', total_cross)
 
-				total_loss = tf.add_n([l_loc, total_cross,l_cross_all_neg], 'total_loss')
+				total_loss = tf.add_n([l_loc, total_cross], 'total_loss')
 				tf.add_to_collection('EXTRA_LOSSES', total_loss)
-				#tf.losses.add_loss(total_loss)
 
 	return total_loss
 
