@@ -25,9 +25,6 @@ tf.app.flags.DEFINE_float(
 tf.app.flags.DEFINE_boolean(
     'use_hard_neg', True,
     'Wheather use use_hard_neg or not')
-tf.app.flags.DEFINE_boolean(
-    'use_batch', False,
-    'Wheather use batch_norm or not')
 tf.app.flags.DEFINE_float(
     'match_threshold', 0.5, 'Matching threshold in the loss function.')
 tf.app.flags.DEFINE_string(
@@ -124,9 +121,12 @@ tf.app.flags.DEFINE_float(
     'num_epochs_per_decay', 1,
     'Number of epochs after which learning rate decays.')
 tf.app.flags.DEFINE_float(
-    'moving_average_decay', None,
+    'moving_average_decay', 0.997,
     'The decay to use for the moving average.'
     'If left as None, then moving averages are not used.')
+tf.app.flags.DEFINE_boolean(
+    'use_batch', True,
+    'Wheather use batch_norm or not')
 
 # =========================================================================== #
 # Dataset Flags.
@@ -254,6 +254,18 @@ def main(_):
         for variable in slim.get_model_variables():
             summaries.add(tf.summary.histogram(variable.op.name, variable))
         '''
+        update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+
+        #################################
+        # Configure the moving averages #
+        #################################
+        if FLAGS.moving_average_decay:
+            moving_average_variables = slim.get_model_variables()
+            variable_averages = tf.train.ExponentialMovingAverage(
+                              FLAGS.moving_average_decay, global_step)
+        else:
+            moving_average_variables, variable_averages = None, None
+
 
         with tf.device(FLAGS.gpu_train):
             learning_rate = tf_utils.configure_learning_rate(FLAGS,
@@ -261,16 +273,33 @@ def main(_):
                                                              global_step)
             # Configure the optimization procedure 
             optimizer = tf_utils.configure_optimizer(FLAGS, learning_rate)
-            summaries.add(tf.summary.scalar('learning_rate', learning_rate))
+            #summaries.add(tf.summary.scalar('learning_rate', learning_rate))
 
             ## Training 
             #loss = tf.get_collection(tf.GraphKeys.LOSSES)
             #total_loss = tf.add_n(loss)
+            '''
             if FLAGS.fine_tune:
                 gradient_multipliers = pickle.load(open('nets/multiplier_300.pkl','rb'))
             else:
                 gradient_multipliers = None
-            train_op = slim.learning.create_train_op(total_loss, optimizer, gradient_multipliers=gradient_multipliers)
+            '''
+        if FLAGS.moving_average_decay:
+            # Update ops executed locally by trainer.
+            update_ops.append(variable_averages.apply(moving_average_variables))
+
+        # Variables to train.
+        variables_to_train = tf_utils.get_variables_to_train(FLAGS)
+        vars_grad = optimizer.compute_gradients(total_loss, variables_to_train)
+        grad_updates = optimizer.apply_gradients(vars_grad,
+                                                 global_step=global_step)
+        update_ops.append(grad_updates)
+
+        update_op = tf.group(*update_ops)
+        train_op = control_flow_ops.with_dependencies([update_op], total_loss,
+                                                          name='train_op')
+        #train_op = slim.learning.create_train_op(total_loss, optimizer, gradient_multipliers=gradient_multipliers)
+
 
         # =================================================================== #
         # Kicks off the training.

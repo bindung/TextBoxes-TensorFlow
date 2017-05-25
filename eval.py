@@ -88,7 +88,7 @@ tf.app.flags.DEFINE_boolean(
 tf.app.flags.DEFINE_integer('shuffle_data', False,
 							'Wheather shuffe the datasets')
 tf.app.flags.DEFINE_boolean(
-	'use_batch', False,
+	'use_batch', True,
 	'Wheather use batch_norm or not')
 
 
