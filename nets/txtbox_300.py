@@ -443,12 +443,10 @@ def text_losses(logits, localisations,
 			val, idxes = tf.nn.top_k(loss_neg_flat, k=n_neg)
 			minval = val[-1]
 			nmask = tf.logical_and(nmask, loss_neg >= minval)
-		
 
+			fnmask = tf.cast(nmask, tf.float32)
+			l_cross_neg = tf.losses.compute_weighted_loss(loss, fnmask)
 		n_neg = tf.reduce_sum(tf.cast(nmask, tf.int32))
-		fnmask = tf.cast(nmask, tf.float32)
-		l_cross_neg = tf.losses.compute_weighted_loss(loss, fnmask)
-		
 
 
 
