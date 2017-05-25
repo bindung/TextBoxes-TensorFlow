@@ -136,6 +136,9 @@ tf.app.flags.DEFINE_boolean(
 tf.app.flags.DEFINE_boolean(
 	'use_hard_neg', True,
 	'Wheather use use_hard_neg or not')
+tf.app.flags.DEFINE_boolean(
+	'use_whiten', True,
+	'Wheather use whiten or not,genally you can choose whiten or batchnorm tech.')
 
 # =========================================================================== #
 # Dataset Flags.
@@ -232,7 +235,7 @@ def main(_):
 								 out_shape,
 								 net,
 								 anchors,
-								 FLAGS.num_preprocessing_threads,
+								 FLAGS,
 								 file_pattern = FLAGS.file_pattern,
 								 is_training = True,
 								 shuffe = FLAGS.shuffle_data)

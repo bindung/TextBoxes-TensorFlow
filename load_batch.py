@@ -19,7 +19,7 @@ def get_batch(dataset_dir,
 			  out_shape,
 			  net,
 			  anchors,
-			  num_preprocessing_threads,
+			  FLAGS,
 			  file_pattern = '*.tfrecord',
 			  is_training = True,
 			  shuffe = False):
@@ -42,7 +42,7 @@ def get_batch(dataset_dir,
 	if is_training:
 		image, glabels, gbboxes,num = \
 		txt_preprocessing.preprocess_image(image,  glabels,gbboxes, 
-										out_shape,is_training=is_training)
+										out_shape,use_whiten=FLAGS.use_whiten,is_training=is_training)
 
 		glocalisations, gscores = \
 		net.bboxes_encode( gbboxes, anchors, num)
@@ -53,7 +53,7 @@ def get_batch(dataset_dir,
 		r = tf.train.batch(
 			tf_utils.reshape_list([image, glocalisations, gscores]),
 			batch_size=batch_size,
-			num_threads=num_preprocessing_threads,
+			num_threads=FLAGS.num_preprocessing_threads,
 			capacity=5 * batch_size,
 			)
 
@@ -65,7 +65,7 @@ def get_batch(dataset_dir,
 	else:
 		image, glabels, gbboxes,bbox_img, num = \
 		txt_preprocessing.preprocess_image(image,  glabels,gbboxes, 
-										out_shape,is_training=is_training)
+										out_shape,use_whiten=FLAGS.use_whiten,is_training=is_training)
 
 		glocalisations, gscores = \
 			net.bboxes_encode( gbboxes, anchors, num)
@@ -74,7 +74,7 @@ def get_batch(dataset_dir,
 			tf_utils.reshape_list([image, glabels, gbboxes, bbox_img,
 								   glocalisations, gscores]),
 			batch_size=batch_size,
-			num_threads=num_preprocessing_threads,
+			num_threads=FLAGS.num_preprocessing_threads,
 			capacity=5 * batch_size,
 			dynamic_pad=True)
 

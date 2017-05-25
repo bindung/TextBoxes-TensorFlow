@@ -11,6 +11,7 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
 import tf_utils
 import load_batch
+from nets import nets_factory
 from nets import txtbox_300
 import pickle
 
@@ -127,7 +128,9 @@ tf.app.flags.DEFINE_float(
 tf.app.flags.DEFINE_boolean(
     'use_batch', True,
     'Wheather use batch_norm or not')
-
+tf.app.flags.DEFINE_boolean(
+    'use_whiten', True,
+    'Wheather use whiten or not,genally you can choose whiten or batchnorm tech.')
 # =========================================================================== #
 # Dataset Flags.
 # =========================================================================== #
@@ -145,7 +148,7 @@ tf.app.flags.DEFINE_integer(
     'evaluate the VGG and ResNet architectures which do not use a background '
     'class for the ImageNet dataset.')
 tf.app.flags.DEFINE_string(
-    'model_name', 'text_box_300', 'The name of the architecture to train.')
+    'model_name', 'txtbox_300', 'The name of the architecture to train.')
 tf.app.flags.DEFINE_string(
     'preprocessing_name', None, 'The name of the preprocessing to use. If left '
     'as `None`, then the model_name flag is used.')
@@ -193,10 +196,11 @@ def main(_):
     tf.logging.set_verbosity(tf.logging.DEBUG)
 
     with tf.Graph().as_default():
-        params = txtbox_300.TextboxNet.default_params
+        network_fn = nets_factory.get_network(FLAGS.model_name)
+        params = network_fn.default_params
         params = params._replace( match_threshold=FLAGS.match_threshold)
         # initalize the net
-        net = txtbox_300.TextboxNet(params)
+        net = network_fn(params)
         out_shape = net.params.img_shape
         anchors = net.anchors(out_shape)
 
@@ -212,7 +216,7 @@ def main(_):
                              out_shape,
                              net,
                              anchors,
-                             FLAGS.num_preprocessing_threads,
+                             FLAGS,
                              file_pattern = FLAGS.file_pattern,
                              is_training = True,
                              shuffe = FLAGS.shuffle_data)

@@ -97,7 +97,7 @@ def distorted_bounding_box_crop(image,
 
 
 def preprocess_for_train(image, labels, bboxes,
-                         out_shape, data_format='NHWC',
+                         out_shape, data_format='NHWC',use_whiten=True,
                          scope='textbox_process_train'):
     """Preprocesses the given image for training.
     Args:
@@ -149,13 +149,14 @@ def preprocess_for_train(image, labels, bboxes,
         
         image = dst_image *255
         image.set_shape([out_shape[0], out_shape[1], 3])
-        image = tf_image.tf_image_whitened(image, [_R_MEAN, _G_MEAN, _B_MEAN])
-        image = image/255.0
+        if use_whiten:
+            image = tf_image.tf_image_whitened(image, [_R_MEAN, _G_MEAN, _B_MEAN])
+            image = image/255.0
         return image, labels, bboxes,num
 
 
 def preprocess_for_eval(image, labels, bboxes,
-                        out_shape=EVAL_SIZE, data_format='NHWC',
+                        out_shape=EVAL_SIZE, data_format='NHWC',use_whiten = True,
                         difficults=None, resize=Resize.WARP_RESIZE,
                         scope='ssd_preprocessing_train'):
     """Preprocess an image for evaluation.
@@ -222,14 +223,16 @@ def preprocess_for_eval(image, labels, bboxes,
             labels = tf.boolean_mask(labels, mask)
             bboxes = tf.boolean_mask(bboxes, mask)
         # Image data format.
-        image = tf_image.tf_image_whitened(image, [_R_MEAN, _G_MEAN, _B_MEAN])
-        image = image/255.0
+        if use_whiten:
+            image = tf_image.tf_image_whitened(image, [_R_MEAN, _G_MEAN, _B_MEAN])
+            image = image/255.0
         return image, labels, bboxes, bbox_img, num
 
 def preprocess_image(image,
                      labels,
                      bboxes,
                      out_shape,
+                     use_whiten = True,
                      is_training=False,
                      **kwargs):
     """Pre-process an given image.
@@ -244,9 +247,9 @@ def preprocess_image(image,
       A preprocessed image.
     """
     if is_training:
-        return preprocess_for_train(image, labels, bboxes,
+        return preprocess_for_train(image, labels, bboxes,use_whiten=use_whiten,
                                     out_shape=out_shape)
     else:
-        return preprocess_for_eval(image, labels, bboxes,
+        return preprocess_for_eval(image, labels, bboxes,use_whiten=use_whiten,
                                    out_shape=out_shape,
                                    **kwargs)
