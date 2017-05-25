@@ -92,6 +92,9 @@ tf.app.flags.DEFINE_integer('shuffle_data', False,
 tf.app.flags.DEFINE_boolean(
 	'use_batch', True,
 	'Wheather use batch_norm or not')
+tf.app.flags.DEFINE_boolean(
+	'use_whiten', True,
+	'Wheather use whiten or not,genally you can choose whiten or batchnorm tech.')
 
 
 FLAGS = tf.app.flags.FLAGS
@@ -121,7 +124,7 @@ def main(_):
 										 out_shape,
 										 net,
 										 anchors,
-										 FLAGS.num_preprocessing_threads,
+										 FLAGS,
 										 file_pattern =  '*.tfrecord',
 										 is_training = False,
 										 shuffe = FLAGS.shuffle_data)
