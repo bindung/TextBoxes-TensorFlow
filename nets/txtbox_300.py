@@ -96,7 +96,7 @@ class TextboxNet(object):
 			is_training=True,
 			dropout_keep_prob=0.5,
 			reuse=None,
-			scope='textbox_300',
+			scope='text_box_300',
 			use_batch=False):
 		"""
 		Text network definition.
