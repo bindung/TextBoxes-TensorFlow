@@ -431,28 +431,27 @@ def text_losses(logits, localisations,
 
 
 		#loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=alllogits,labels=ipmask)
-		l_cross_all_neg = tf.losses.compute_weighted_loss(loss, fnmask)
+		#l_cross_all_neg = tf.losses.compute_weighted_loss(loss, fnmask)
 		#l_cross_neg = tf.reduce_sum(loss * fnmask)/tf.cast(n_neg, tf.float32)
 		#l_cross_pos = tf.reduce_sum(loss * fpmask)/tf.cast(n_pos, tf.float32)
 		#loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=alllogits,labels=ipmask)
 
-		if use_hard_neg:
-			loss_neg = tf.where(pmask,
-							   tf.cast(tf.zeros_like(ipmask),tf.float32),
-							   loss)
-			loss_neg_flat = tf.reshape(loss_neg, [-1])
-			n_neg = tf.minimum(3*n_pos, tf.cast(n,tf.int32))
-			val, idxes = tf.nn.top_k(loss_neg_flat, k=n_neg)
-			minval = val[-1]
-			nmask = tf.logical_and(nmask, loss_neg >= minval)
+		
+		loss_neg = tf.where(pmask,
+						   tf.cast(tf.zeros_like(ipmask),tf.float32),
+						   loss)
+		loss_neg_flat = tf.reshape(loss_neg, [-1])
+		n_neg = tf.minimum(3*n_pos, tf.cast(n,tf.int32))
+		val, idxes = tf.nn.top_k(loss_neg_flat, k=n_neg)
+		minval = val[-1]
+		nmask = tf.logical_and(nmask, loss_neg >= minval)
 
-			fnmask = tf.cast(nmask, tf.float32)
-			l_cross_neg = tf.losses.compute_weighted_loss(loss, fnmask)
-		else:
-			l_cross_neg = 0.
+		fnmask = tf.cast(nmask, tf.float32)
+		l_cross_neg = tf.losses.compute_weighted_loss(loss, fnmask)
+
 		n_neg = tf.reduce_sum(tf.cast(nmask, tf.int32))
 
-		l_cross_neg = l_cross_all_neg + l_cross_neg
+		#l_cross_neg = l_cross_all_neg + l_cross_neg
 
 
 		#all_mask = tf.logical_or(pmask, nmask)
