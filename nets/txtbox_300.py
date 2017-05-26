@@ -199,10 +199,11 @@ def text_net(inputs,
 			scope='text_box_300'):
 	batch_norm_params = {
 	  # Decay for the moving averages.
-	  'decay': 0.9997,
+	  'decay': 0.997,
+	  'zero_debias_moving_mean':True,
 	  # epsilon to prevent 0s in variance.
 	  'epsilon': 0.001,
-	  'is_training': is_training
+	  'is_training': is_training,
 	}
 	end_points = {}
 	with tf.variable_scope(scope, 'text_box_300', [inputs], reuse=reuse):
@@ -304,9 +305,11 @@ def text_multibox_layer(layer,
 	batch_norm_params = {
 	  # Decay for the moving averages.
 	  'decay': 0.997,
+	  'zero_debias_moving_mean':True,
 	  # epsilon to prevent 0s in variance.
 	  'epsilon': 0.001,
-	  'is_training': is_training
+	  'is_training': is_training,
+	  'scale':True
 	}
 	net = inputs
 	if normalization > 0:
