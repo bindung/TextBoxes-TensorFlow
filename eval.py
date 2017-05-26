@@ -47,7 +47,7 @@ tf.app.flags.DEFINE_boolean(
 tf.app.flags.DEFINE_integer(
 	'num_samples', 229, 'number of dataset size')
 tf.app.flags.DEFINE_string(
-    'model_name', 'txtbox_300', 'The name of the architecture to evaluate.')
+    'model_name', 'text_box_300', 'The name of the architecture to evaluate.')
 
 
 # =========================================================================== #

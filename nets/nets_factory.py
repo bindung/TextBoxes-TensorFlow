@@ -27,15 +27,15 @@ from nets import txtbox_300
 
 slim = tf.contrib.slim
 
-networks_map = {'txtbox_300': txtbox_300.TextboxNet,
-                'txtbox_512': txtbox_512.TextboxNet,
+networks_map = {'text_box_300': txtbox_300.TextboxNet,
+                'text_box_512': txtbox_512.TextboxNet,
                }
 
-arg_scopes_map = {'txtbox_300': txtbox_300.ssd_arg_scope,
-                  'txtbox_512': txtbox_512.ssd_arg_scope,
+arg_scopes_map = {'text_box_300': txtbox_300.ssd_arg_scope,
+                  'text_box_512': txtbox_512.ssd_arg_scope,
                  }
-networks_obj = {'txtbox_300': txtbox_300.TextboxNet,
-                'txtbox_512': txtbox_512.TextboxNet,
+networks_obj = {'text_box_300': txtbox_300.TextboxNet,
+                'text_box_512': txtbox_512.TextboxNet,
                 }
 
 def get_network(name):
