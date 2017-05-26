@@ -319,10 +319,10 @@ def text_multibox_layer(layer,
 
 	if(layer == 'global'):
 		loc_pred = conv2d(net, num_loc_pred, [1, 1], activation_fn=None, padding = 'VALID',
-						   scope='conv_loc',use_batch=False, batch_norm_params=batch_norm_params)
+						   scope='conv_loc',use_batch=use_batch, batch_norm_params=batch_norm_params)
 	else:
 		loc_pred = conv2d(net, num_loc_pred, [1, 5], activation_fn=None, padding = 'SAME',
-						   scope='conv_loc',use_batch=False, batch_norm_params=batch_norm_params)
+						   scope='conv_loc',use_batch=use_batch, batch_norm_params=batch_norm_params)
 
 	loc_pred = custom_layers.channel_to_last(loc_pred)
 	loc_pred = tf.reshape(loc_pred, loc_pred.get_shape().as_list()[:-1] + [2,num_box,4])
