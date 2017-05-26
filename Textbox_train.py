@@ -283,14 +283,14 @@ def main(_):
 		# the updates for the batch_norm variables created by network_fn.
 		update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS, first_clone_scope)
 
-		'''
+		
 		end_points = clones[0].outputs
 		for end_point in end_points:
 			x = end_points[end_point]
 			summaries.add(tf.summary.histogram('activations/' + end_point, x))
-			summaries.add(tf.summary.scalar('sparsity/' + end_point,
-											tf.nn.zero_fraction(x)))
-		'''
+			#summaries.add(tf.summary.scalar('sparsity/' + end_point,
+			#								tf.nn.zero_fraction(x)))
+		
 
 		#for loss in tf.get_collection(tf.GraphKeys.LOSSES):
 		#	summaries.add(tf.summary.scalar(loss.op.name, loss))
@@ -301,10 +301,10 @@ def main(_):
 		for loss in tf.get_collection('EXTRA_LOSSES',first_clone_scope):
 			summaries.add(tf.summary.scalar(loss.op.name, loss))
 
-		'''
+		
 		for variable in slim.get_model_variables():
 			summaries.add(tf.summary.histogram(variable.op.name, variable))
-		'''
+		
 		#################################
 		# Configure the moving averages #
 		#################################
