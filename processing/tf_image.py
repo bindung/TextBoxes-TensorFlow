@@ -275,10 +275,11 @@ def resize_image(image, size,
     """
     # Resize image.
     with tf.name_scope('resize_image'):
+        color_ordering = np.random.randint(4)
         height, width, channels = _ImageDimensions(image)
         image = tf.expand_dims(image, 0)
-        image = tf.image.resize_images(image, size,
-                                       method, align_corners)
+        image = tf.image.resize_images(image, size[0],size[1],
+                                       method=color_ordering, align_corners)
         image = tf.reshape(image, tf.stack([size[0], size[1], channels]))
         return image
 

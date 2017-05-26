@@ -66,15 +66,15 @@ class TextboxNet(object):
 		feat_layers=['conv4', 'conv7', 'conv8', 'conv9', 'conv10', 'global'],
 		feat_shapes=[(38, 38), (19, 19), (10, 10), (5, 5), (3, 3), (1, 1)],
 		scale_range=[0.2, 0.95],
-		anchor_ratios=[1,2,3,5,7,10],
+		anchor_ratios=[1,1.5,2,3,5,7,10],
 		normalizations=[20, -1, -1, -1, -1, -1],
 		prior_scaling=[0.1, 0.1, 0.2, 0.2],
-		anchor_sizes=[(21., 45.),
-					  (45., 99.),
-					  (99., 153.),
-					  (153., 207.),
-					  (207., 261.),
-					  (261., 315.)],
+		anchor_sizes=[(30., 60.),
+				  (60., 114.),
+				  (114., 168.),
+				  (168., 222.),
+				  (222., 276.),
+				  (276., 330.)],
 		anchor_steps=[8, 16, 30, 60, 100, 300],
 		scales = [0.2 + i*0.8/5  for i in range(6)],
 		#scales = [0.05, 0.1,0.15,0.25,0.4,0.65],
@@ -200,7 +200,6 @@ def text_net(inputs,
 	batch_norm_params = {
 	  # Decay for the moving averages.
 	  'decay': 0.997,
-	  'zero_debias_moving_mean':True,
 	  # epsilon to prevent 0s in variance.
 	  'epsilon': 0.001,
 	  'is_training': is_training,
@@ -226,12 +225,12 @@ def text_net(inputs,
 		# Block 5. # 19 19 512
 		net = slim.repeat(net, 3, slim.conv2d, 512, [3, 3], scope='conv5')
 		end_points['conv5'] = net
-		net = slim.max_pool2d(net, [2, 2], stride=1, scope='pool5',padding='SAME')
+		net = slim.max_pool2d(net, [3, 3], stride=1, scope='pool5',padding='SAME')
 
 		# Additional SSD blocks.
 		# Block 6: let's dilate the hell out of it!
 		#net = slim.conv2d(net, 1024, [3, 3], scope='conv6')
-		net = conv2d(net, 1024, [3,3], scope='conv6',use_batch=use_batch, batch_norm_params= batch_norm_params)
+		net = conv2d(net, 1024, [3,3], scope='conv6',rate=6, use_batch=use_batch, batch_norm_params= batch_norm_params)
 		end_points['conv6'] = net
 		# Block 7: 1x1 conv. Because the fuck.
 		#net = slim.conv2d(net, 1024, [1, 1], scope='conv7')
@@ -280,12 +279,12 @@ def text_net(inputs,
 		return localisations, logits, end_points
 
 def conv2d(inputs, out, kernel_size, scope,stride=1,activation_fn=tf.nn.relu, 
-			padding = 'SAME', use_batch=False, batch_norm_params={}):
+			padding = 'SAME', use_batch=False, batch_norm_params={}, rate = 1):
 	if use_batch:
 		net = slim.conv2d(inputs, out, kernel_size, stride=stride ,scope=scope, normalizer_fn=slim.batch_norm, 
-			  normalizer_params=batch_norm_params, activation_fn=activation_fn ,padding = padding)
+			  normalizer_params=batch_norm_params, activation_fn=activation_fn ,padding = padding, rate = rate)
 	else:
-		net = slim.conv2d(inputs, out, kernel_size, stride=stride, scope=scope, activation_fn=activation_fn,padding = padding)
+		net = slim.conv2d(inputs, out, kernel_size, stride=stride, scope=scope, activation_fn=activation_fn,padding = padding, rate = rate)
 	return net
 
 
