@@ -69,12 +69,12 @@ class TextboxNet(object):
 		anchor_ratios=[1,2,3,5,7,10],
 		normalizations=[20, -1, -1, -1, -1, -1],
 		prior_scaling=[0.1, 0.1, 0.2, 0.2],
-		anchor_sizes=[(30., 60.),
-				  (60., 114.),
-				  (114., 168.),
-				  (168., 222.),
-				  (222., 276.),
-				  (276., 330.)],
+		anchor_sizes=[(21., 45.),
+					  (45., 99.),
+					  (99., 153.),
+					  (153., 207.),
+					  (207., 261.),
+					  (261., 315.)],
 		anchor_steps=[8, 16, 30, 60, 100, 300],
 		scales = [0.2 + i*0.8/5  for i in range(6)],
 		#scales = [0.05, 0.1,0.15,0.25,0.4,0.65],
@@ -199,7 +199,7 @@ def text_net(inputs,
 			scope='text_box_300'):
 	batch_norm_params = {
 	  # Decay for the moving averages.
-	  'decay': 0.997,
+	  'decay': 0.9997,
 	  # epsilon to prevent 0s in variance.
 	  'epsilon': 0.001,
 	  'is_training': is_training,
@@ -230,7 +230,7 @@ def text_net(inputs,
 		# Additional SSD blocks.
 		# Block 6: let's dilate the hell out of it!
 		#net = slim.conv2d(net, 1024, [3, 3], scope='conv6')
-		net = conv2d(net, 1024, [3,3], scope='conv6',rate=6, use_batch=use_batch, batch_norm_params= batch_norm_params)
+		net = conv2d(net, 1024, [3,3], scope='conv6',rate=1, use_batch=use_batch, batch_norm_params= batch_norm_params)
 		end_points['conv6'] = net
 		# Block 7: 1x1 conv. Because the fuck.
 		#net = slim.conv2d(net, 1024, [1, 1], scope='conv7')
@@ -303,12 +303,11 @@ def text_multibox_layer(layer,
 	"""
 	batch_norm_params = {
 	  # Decay for the moving averages.
-	  'decay': 0.997,
-	  'zero_debias_moving_mean':True,
+	  'decay': 0.9997,
 	  # epsilon to prevent 0s in variance.
 	  'epsilon': 0.001,
 	  'is_training': is_training,
-	  'scale':True
+	  'scale':False
 	}
 	net = inputs
 	if normalization > 0:
@@ -331,6 +330,13 @@ def text_multibox_layer(layer,
 	# Class prediction.
 	scores_pred = 2 * num_box * num_classes
 
+	batch_norm_params = {
+	  # Decay for the moving averages.
+	  'decay': 0.9997,
+	  # epsilon to prevent 0s in variance.
+	  'epsilon': 0.001,
+	  'is_training': is_training,
+	}
 	if(layer == 'global'):
 		sco_pred = conv2d(net, scores_pred, [1, 1], activation_fn=None, padding = 'VALID',
 						   scope='conv_cls',use_batch=use_batch, batch_norm_params=batch_norm_params)
