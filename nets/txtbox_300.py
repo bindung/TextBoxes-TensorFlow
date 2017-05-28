@@ -222,10 +222,10 @@ def text_net(inputs,
 		net = slim.repeat(net, 3, slim.conv2d, 512, [3, 3], scope='conv4')
 		end_points['conv4'] = net
 		#net = slim.max_pool2d(net, [2, 2],scope='pool4')
-		net = slim.max_pool2d(net, [3, 3], stride=1, scope='pool4',padding='SAME')
+		net = slim.max_pool2d(net, [2, 2], scope='pool4')
 		# Block 5. # 19 19 512
 		#net = slim.repeat(net, 3, slim.conv2d, 512, [3, 3], scope='conv5')
-		net = slim.repeat(net, 3, slim.conv2d, 512, [3, 3], scope='conv5',rate=2)
+		net = slim.repeat(net, 3, slim.conv2d, 512, [3, 3], scope='conv5')
 		end_points['conv5'] = net
 		net = slim.max_pool2d(net, [3, 3], stride=1, scope='pool5',padding='SAME')
 
@@ -233,7 +233,7 @@ def text_net(inputs,
 		# Block 6: let's dilate the hell out of it!
 		#net = slim.conv2d(net, 1024, [3, 3], scope='conv6')
 		#net = conv2d(net, 1024, [3,3], scope='conv6',rate=1, use_batch=use_batch, batch_norm_params= batch_norm_params)
-		net = conv2d(net, 1024, [3,3], scope='conv6',rate=4, use_batch=use_batch, batch_norm_params= batch_norm_params)
+		net = conv2d(net, 1024, [3,3], scope='conv6',rate=6, use_batch=use_batch, batch_norm_params= batch_norm_params)
 		end_points['conv6'] = net
 		# Block 7: 1x1 conv. Because the fuck.
 		#net = slim.conv2d(net, 1024, [1, 1], scope='conv7')
