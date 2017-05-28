@@ -195,7 +195,7 @@ def text_net(inputs,
 			dropout_keep_prob=0.5,
 			reuse=None,
 			use_batch=False,
-			scope='text_box_300'):
+			scope='text_box_512'):
 	batch_norm_params = {
 	  # Decay for the moving averages.
 	  'decay': 0.997,

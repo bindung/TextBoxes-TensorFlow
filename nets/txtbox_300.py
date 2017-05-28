@@ -66,15 +66,15 @@ class TextboxNet(object):
 		feat_layers=['conv4', 'conv7', 'conv8', 'conv9', 'conv10', 'global'],
 		feat_shapes=[(38, 38), (19, 19), (10, 10), (5, 5), (3, 3), (1, 1)],
 		scale_range=[0.2, 0.95],
-		anchor_ratios=[1,2,3,5,7,10],
+		anchor_ratios=[1.,2,3,5,7,10],
 		normalizations=[20, -1, -1, -1, -1, -1],
 		prior_scaling=[0.1, 0.1, 0.2, 0.2],
-		anchor_sizes=[(21., 45.),
-					  (45., 99.),
-					  (99., 153.),
-					  (153., 207.),
-					  (207., 261.),
-					  (261., 315.)],
+		anchor_sizes=[(30., 60.),
+				  (60., 114.),
+				  (114., 168.),
+				  (168., 222.),
+				  (222., 276.),
+				  (276., 330.)],		
 		anchor_steps=[8, 16, 30, 60, 100, 300],
 		scales = [0.2 + i*0.8/5  for i in range(6)],
 		#scales = [0.05, 0.1,0.15,0.25,0.4,0.65],
@@ -221,16 +221,19 @@ def text_net(inputs,
 		# Block 4. # 38 38 512
 		net = slim.repeat(net, 3, slim.conv2d, 512, [3, 3], scope='conv4')
 		end_points['conv4'] = net
-		net = slim.max_pool2d(net, [2, 2], scope='pool4')
+		#net = slim.max_pool2d(net, [2, 2],scope='pool4')
+		net = slim.max_pool2d(net, [3, 3], stride=1, scope='pool4',padding='SAME')
 		# Block 5. # 19 19 512
-		net = slim.repeat(net, 3, slim.conv2d, 512, [3, 3], scope='conv5')
+		#net = slim.repeat(net, 3, slim.conv2d, 512, [3, 3], scope='conv5')
+		net = slim.repeat(net, 3, slim.conv2d, 512, [3, 3], scope='conv5',rate=2)
 		end_points['conv5'] = net
 		net = slim.max_pool2d(net, [3, 3], stride=1, scope='pool5',padding='SAME')
 
 		# Additional SSD blocks.
 		# Block 6: let's dilate the hell out of it!
 		#net = slim.conv2d(net, 1024, [3, 3], scope='conv6')
-		net = conv2d(net, 1024, [3,3], scope='conv6',rate=1, use_batch=use_batch, batch_norm_params= batch_norm_params)
+		#net = conv2d(net, 1024, [3,3], scope='conv6',rate=1, use_batch=use_batch, batch_norm_params= batch_norm_params)
+		net = conv2d(net, 1024, [3,3], scope='conv6',rate=4, use_batch=use_batch, batch_norm_params= batch_norm_params)
 		end_points['conv6'] = net
 		# Block 7: 1x1 conv. Because the fuck.
 		#net = slim.conv2d(net, 1024, [1, 1], scope='conv7')
@@ -307,7 +310,8 @@ def text_multibox_layer(layer,
 	  # epsilon to prevent 0s in variance.
 	  'epsilon': 0.001,
 	  'is_training': is_training,
-	  'scale':False
+	  'zero_debias_moving_mean':False,
+	  'scale':False,
 	}
 	net = inputs
 	if normalization > 0:
@@ -380,8 +384,8 @@ def ssd_arg_scope(weight_decay=0.0005, data_format='NHWC'):
 	with slim.arg_scope([slim.conv2d, slim.fully_connected],
 						activation_fn=tf.nn.relu,
 						weights_regularizer=slim.l2_regularizer(weight_decay),
-						weights_initializer=tf.truncated_normal_initializer(stddev=0.03, seed = 1000),
-						#weights_initializer=tf.contrib.layers.xavier_initializer(),
+						#weights_initializer=tf.truncated_normal_initializer(stddev=0.03, seed = 1000),
+						weights_initializer=tf.contrib.layers.xavier_initializer(),
 						biases_initializer=tf.zeros_initializer()):
 		with slim.arg_scope([slim.conv2d, slim.max_pool2d],
 							padding='SAME',
