@@ -13,7 +13,7 @@ import tf_extended as tfe
 # =========================================================================== #
 
 def tf_text_bboxes_encode_layer(bboxes,
-								 anchors_layer, num,box_detect,
+								 anchors_layer, num,box_detect,idx,
 								 match_threshold=0.5,
 								 prior_scaling=[0.1, 0.1, 0.2, 0.2],
 								 dtype=tf.float32):
@@ -71,7 +71,7 @@ def tf_text_bboxes_encode_layer(bboxes,
 		
 
 
-		def condition(i, feat_scores,box_detect,
+		def condition(i, feat_scores,box_detect,idx,
 									feat_ymin, feat_xmin, feat_ymax, feat_xmax):
 				"""Condition: check label index.
 				"""
@@ -79,7 +79,7 @@ def tf_text_bboxes_encode_layer(bboxes,
 				r = tf.less(i, num)
 				return r
 
-		def body(i, feat_scores,box_detect,feat_ymin, feat_xmin, feat_ymax, feat_xmax):
+		def body(i, feat_scores,box_detect,idx,feat_ymin, feat_xmin, feat_ymax, feat_xmax):
 				"""Body: update feature labels, scores and bboxes.
 				Follow the original SSD paper for that purpose:
 					- assign values when jaccard > 0.5;
@@ -121,27 +121,37 @@ def tf_text_bboxes_encode_layer(bboxes,
 					feat_xmax = fmask * bbox[3] + (1 - fmask) * feat_xmax
 					return feat_scores,feat_ymin,feat_xmin,feat_ymax,feat_xmax
 
-				def update1(eat_scores = feat_scores,feat_ymin=feat_ymin, 
+				def update1(feat_scores = feat_scores,feat_ymin=feat_ymin, 
 							feat_xmin=feat_xmin, feat_ymax=feat_ymax, feat_xmax=feat_xmax):
 					return feat_scores,feat_ymin,feat_xmin,feat_ymax,feat_xmax
 
-				feat_scores, feat_ymin, feat_xmin, feat_ymax, feat_xmax	= \
+				def update_all(feat_scores = feat_scores,feat_ymin=feat_ymin, 
+								feat_xmin=feat_xmin, feat_ymax=feat_ymax, feat_xmax=feat_xmax):
+					
+					feat_scores, feat_ymin, feat_xmin, feat_ymax, feat_xmax	= \
 						tf.cond( tf.logical_and(tf.less(box_detect[i], 1),
 									tf.logical_and(tf.equal(tf.reduce_sum(imask), 0), tf.greater(max_jar, 0.1))), 
 							  update0, 
 							  update1)
+					return feat_scores, feat_ymin, feat_xmin, feat_ymax, feat_xmax	
+
+
+				feat_scores,feat_ymin, feat_xmin, feat_ymax, feat_xmax = \
+						tf.cond(tf.less(idx,2),update_all, update1)
+
+
 				box_mask = tf.cast(tf.equal(tf.range(num), i), tf.int32)
 				box_detect = box_detect + tf.ones([num],tf.int32) * box_mask
 
-				return [i+1, feat_scores,box_detect,
+				return [i+1, feat_scores,box_detect,idx,
 								feat_ymin, feat_xmin, feat_ymax, feat_xmax]
 		# Main loop definition.
 
 		i = 0
-		[i,feat_scores,box_detect,
+		[i,feat_scores,box_detect,idx,
 		 feat_ymin, feat_xmin,
 		 feat_ymax, feat_xmax] = tf.while_loop(condition, body,
-												[i, feat_scores,box_detect,
+												[i, feat_scores,box_detect,idx,
 												feat_ymin, feat_xmin,
 												feat_ymax, feat_xmax])
 
@@ -191,7 +201,7 @@ def tf_text_bboxes_encode(bboxes,
 				for i, anchors_layer in enumerate(anchors):
 						with tf.name_scope('bboxes_encode_block_%i' % i):
 								t_loc, t_scores,box_detect = \
-										tf_text_bboxes_encode_layer(bboxes,anchors_layer, num,box_detect,
+										tf_text_bboxes_encode_layer(bboxes,anchors_layer, num,box_detect,i,
 																	match_threshold,
 																	prior_scaling, dtype)
 								target_localizations.append(t_loc)
