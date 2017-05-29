@@ -39,7 +39,7 @@ _G_MEAN = 117.
 _B_MEAN = 104.
 
 # Some training pre-processing parameters.
-BBOX_CROP_OVERLAP = 0.4      # Minimum overlap to keep a bbox after cropping.
+BBOX_CROP_OVERLAP = 0.1      # Minimum overlap to keep a bbox after cropping.
 CROP_RATIO_RANGE = (0.3, 2.0)  # Distortion ratio during cropping.
 EVAL_SIZE = (300, 300)
 OBJECT_COVERED = [0.1,0.3,0.5,0.7,0.9]

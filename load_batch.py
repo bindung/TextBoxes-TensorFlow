@@ -43,9 +43,9 @@ def get_batch(dataset_dir,
 		image, glabels, gbboxes,num = \
 		txt_preprocessing.preprocess_image(image,  glabels,gbboxes, 
 										out_shape,use_whiten=FLAGS.use_whiten,is_training=is_training)
-
-		glocalisations, gscores = \
-		net.bboxes_encode( gbboxes, anchors, num)
+		with tf.device("cpu:0"):
+			glocalisations, gscores = \
+			net.bboxes_encode( gbboxes, anchors, num)
 
 		batch_shape = [1] + [len(anchors)] * 2
 
