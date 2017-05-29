@@ -39,10 +39,10 @@ _G_MEAN = 117.
 _B_MEAN = 104.
 
 # Some training pre-processing parameters.
-BBOX_CROP_OVERLAP = 0.05       # Minimum overlap to keep a bbox after cropping.
+BBOX_CROP_OVERLAP = 0.4      # Minimum overlap to keep a bbox after cropping.
 CROP_RATIO_RANGE = (0.3, 2.0)  # Distortion ratio during cropping.
 EVAL_SIZE = (300, 300)
-
+OBJECT_COVERED = [0.1,0.3,0.5,0.7,0.9]
 
 
 def distorted_bounding_box_crop(image,
@@ -124,9 +124,11 @@ def preprocess_for_train(image, labels, bboxes,
     
         #image, boxes = zoom_out(image, boxes)
         # Distort image and bounding boxes.
-
+        object_covered = np.random.randint(5)
+        min_object_covered = OBJECT_COVERED[object_covered]
         image, labels, bboxes, distort_bbox ,num= \
             distorted_bounding_box_crop(image, labels, bboxes,
+                                        min_object_covered=min_object_covered,
                                         aspect_ratio_range=CROP_RATIO_RANGE)
         
         # Resize image to output size.

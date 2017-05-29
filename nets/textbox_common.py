@@ -69,7 +69,7 @@ def tf_text_bboxes_encode_layer(bboxes,
         jaccard = tf.div(inter_vol, union_vol)
         return jaccard
     
-    """
+    """\
     # never use in Textbox
     def intersection_with_anchors(bbox):
         '''

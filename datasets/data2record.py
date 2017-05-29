@@ -14,7 +14,7 @@ from datasets.dataset_utils import int64_feature, float_feature, bytes_feature ,
 
 from PIL import Image
 
-data_path = 'data/sythtext/'
+data_path = '../data/sythtext/'
 os.chdir(data_path)
 cellname = 'gt'
 textname = 'txt'
