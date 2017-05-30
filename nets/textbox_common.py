@@ -341,7 +341,7 @@ def tf_ssd_bboxes_decode(feat_localizations,
 # =========================================================================== #
 def tf_ssd_bboxes_select_layer(predictions_layer, localizations_layer,
 															 select_threshold=None,
-															 num_classes=21,
+															 num_classes=2,
 															 ignore_class=0,
 															 scope=None):
 		"""Extract classes, scores and bounding boxes from features in one layer.
@@ -361,11 +361,9 @@ def tf_ssd_bboxes_select_layer(predictions_layer, localizations_layer,
 											 [predictions_layer, localizations_layer]):
 				# Reshape features: Batches x N x N_labels | 4
 				p_shape = tfe.get_shape(predictions_layer)
-				predictions_layer = tf.reshape(predictions_layer,
-																			 tf.stack([p_shape[0], -1, p_shape[-1]]))
+				predictions_layer = tf.reshape(predictions_layer,tf.stack([p_shape[0], -1, p_shape[-1]]))
 				l_shape = tfe.get_shape(localizations_layer)
-				localizations_layer = tf.reshape(localizations_layer,
-																				 tf.stack([l_shape[0], -1, l_shape[-1]]))
+				localizations_layer = tf.reshape(localizations_layer,tf.stack([l_shape[0], -1, l_shape[-1]]))
 
 				d_scores = {}
 				d_bboxes = {}
@@ -406,10 +404,10 @@ def tf_ssd_bboxes_select(predictions_net, localizations_net,
 				l_bboxes = []
 				for i in range(len(predictions_net)):
 						scores, bboxes = tf_ssd_bboxes_select_layer(predictions_net[i],
-																												localizations_net[i],
-																												select_threshold,
-																												num_classes,
-																												ignore_class)
+																	localizations_net[i],
+																	select_threshold,
+																	num_classes,
+																	ignore_class)
 						l_scores.append(scores)
 						l_bboxes.append(bboxes)
 				# Concat results.

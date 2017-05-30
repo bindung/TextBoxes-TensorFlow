@@ -39,7 +39,7 @@ _G_MEAN = 117.
 _B_MEAN = 104.
 
 # Some training pre-processing parameters.
-BBOX_CROP_OVERLAP = 0.1      # Minimum overlap to keep a bbox after cropping.
+BBOX_CROP_OVERLAP = 0.4      # Minimum overlap to keep a bbox after cropping.
 CROP_RATIO_RANGE = (0.3, 2.0)  # Distortion ratio during cropping.
 EVAL_SIZE = (300, 300)
 OBJECT_COVERED = [0.1,0.3,0.5,0.7,0.9]
@@ -152,9 +152,9 @@ def preprocess_for_train(image, labels, bboxes,
         
         image = dst_image *255
         image.set_shape([out_shape[0], out_shape[1], 3])
-        if use_whiten:
-            image = tf_image.tf_image_whitened(image, [_R_MEAN, _G_MEAN, _B_MEAN])
-            image = image/255.0
+        
+        image = tf_image.tf_image_whitened(image, [_R_MEAN, _G_MEAN, _B_MEAN])
+        #image = image/255.0
         bboxes = tf.minimum(bboxes, 1.0)
         bboxes = tf.maximum(bboxes, 0.0)
         return image, labels, bboxes,num
@@ -181,6 +181,7 @@ def preprocess_for_eval(image, labels, bboxes,
             raise ValueError('Input must be of size [height, width, C>0]')
 
         image = tf.to_float(image)
+        image = tf_image.tf_image_whitened(image, [_R_MEAN, _G_MEAN, _B_MEAN])
         num = 0
         if labels is not None:
             num = tf.reduce_sum(tf.cast(labels, tf.int32))
@@ -228,9 +229,9 @@ def preprocess_for_eval(image, labels, bboxes,
             labels = tf.boolean_mask(labels, mask)
             bboxes = tf.boolean_mask(bboxes, mask)
         # Image data format.
-        if use_whiten:
-            image = tf_image.tf_image_whitened(image, [_R_MEAN, _G_MEAN, _B_MEAN])
-            image = image/255.0
+        #if use_whiten:
+        
+        #image = image/255.0
         return image, labels, bboxes, bbox_img, num
 
 def preprocess_image(image,

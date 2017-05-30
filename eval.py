@@ -29,7 +29,7 @@ DATA_FORMAT = 'NHWC'
 # SSD evaluation Flags.
 # =========================================================================== #
 tf.app.flags.DEFINE_float(
-	'select_threshold', 0.01, 'Selection threshold.')
+	'select_threshold', 0.5, 'Selection threshold.')
 tf.app.flags.DEFINE_integer(
 	'select_top_k', 400, 'Select top-k detected bounding boxes.')
 tf.app.flags.DEFINE_integer(
