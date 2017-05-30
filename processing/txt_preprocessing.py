@@ -116,14 +116,12 @@ def preprocess_for_train(image, labels, bboxes,
 
         
         # Convert to float scaled [0, 1].
-        if image.dtype != tf.float32:
-            image = tf.image.convert_image_dtype(image, dtype=tf.float32)
+        image = tf.to_float(image)
         num = tf.reduce_sum(tf.cast(labels, tf.int32))
         bboxes = tf.minimum(bboxes, 1.0)
         bboxes = tf.maximum(bboxes, 0.0)
     
-        #image, boxes = zoom_out(image, boxes)
-        # Distort image and bounding boxes.
+        '''
         object_covered = np.random.randint(5)
         min_object_covered = OBJECT_COVERED[object_covered]
         image, labels, bboxes, distort_bbox ,num= \
@@ -132,9 +130,9 @@ def preprocess_for_train(image, labels, bboxes,
                                         aspect_ratio_range=CROP_RATIO_RANGE)
         
         # Resize image to output size.
-        
+        image = image *255
         dst_image = tf_image.resize_image(image, out_shape,
-                                          method=tf.image.ResizeMethod.BILINEAR,
+                                          method=tf.image.ResizeMethod.BICUBIC,
                                           align_corners=False)
         
         dst_image, bboxes = tf_image.random_flip_left_right(dst_image, bboxes)
@@ -147,13 +145,18 @@ def preprocess_for_train(image, labels, bboxes,
                 dst_image,
                 lambda x, ordering: tf_image.distort_color_2(x, ordering, False),
                 num_cases=4)
-        
+
         # Rescale to normal range
         
-        image = dst_image *255
-        image.set_shape([out_shape[0], out_shape[1], 3])
-        
+        image = dst_image
+        '''
         image = tf_image.tf_image_whitened(image, [_R_MEAN, _G_MEAN, _B_MEAN])
+        image = tf_image.resize_image(image, out_shape,
+                                          method=tf.image.ResizeMethod.BICUBIC,
+                                          align_corners=False)
+
+        image.set_shape([out_shape[0], out_shape[1], 3])
+         
         #image = image/255.0
         bboxes = tf.minimum(bboxes, 1.0)
         bboxes = tf.maximum(bboxes, 0.0)
@@ -181,7 +184,8 @@ def preprocess_for_eval(image, labels, bboxes,
             raise ValueError('Input must be of size [height, width, C>0]')
 
         image = tf.to_float(image)
-        image = tf_image.tf_image_whitened(image, [_R_MEAN, _G_MEAN, _B_MEAN])
+        if use_whiten:
+            image = tf_image.tf_image_whitened(image, [_R_MEAN, _G_MEAN, _B_MEAN])
         num = 0
         if labels is not None:
             num = tf.reduce_sum(tf.cast(labels, tf.int32))
@@ -217,7 +221,7 @@ def preprocess_for_eval(image, labels, bboxes,
         elif resize == Resize.WARP_RESIZE:
             # Warp resize of the image.
             image = tf_image.resize_image(image, out_shape,
-                                          method=tf.image.ResizeMethod.BILINEAR,
+                                          method=tf.image.ResizeMethod.BICUBIC,
                                           align_corners=False)
 
         # Split back bounding boxes.
@@ -228,9 +232,7 @@ def preprocess_for_eval(image, labels, bboxes,
             mask = tf.logical_not(tf.cast(difficults, tf.bool))
             labels = tf.boolean_mask(labels, mask)
             bboxes = tf.boolean_mask(bboxes, mask)
-        # Image data format.
-        #if use_whiten:
-        
+
         #image = image/255.0
         return image, labels, bboxes, bbox_img, num
 
