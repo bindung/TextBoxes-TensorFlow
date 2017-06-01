@@ -229,7 +229,7 @@ def main(_):
 		anchors = net.anchors(out_shape)
 
 		# create batch dataset
-		with tf.device('/cpu:0'):
+		with tf.device(deploy_config.inputs_device()):
 			b_image, b_glocalisations, b_gscores = \
 			load_batch.get_batch(FLAGS.dataset_dir,
 								 FLAGS.num_readers,
