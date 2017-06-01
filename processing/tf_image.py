@@ -360,7 +360,8 @@ def distort_color_2(image, color_ordering=0, fast_mode=True, scope=None):
     Raises:
         ValueError: if color_ordering not in [0, 3]
     """
-    color_ordering = np.random.randint(4)
+    #color_ordering = np.random.randint(4)
+    '''
     with tf.name_scope(scope, 'distort_color', [image]):
         if fast_mode:
             if color_ordering == 0:
@@ -392,7 +393,53 @@ def distort_color_2(image, color_ordering=0, fast_mode=True, scope=None):
                 image = tf.image.random_brightness(image, max_delta=32. / 255.)
             else:
                 raise ValueError('color_ordering must be in [0, 3]')
-        # The random_* ops do not necessarily clamp.
+        # The random_* ops do not necessarily clamp
+        '''
+    with tf.name_scope(scope, 'distort_color', [image]):
+        color_ordering = tf.random_uniform([], minval=0, maxval=6, dtype=tf.int32, seed=None, name=None)
+        def f1(image=image):
+            image = tf.image.random_brightness(image, max_delta=32. / 255.)
+            image = tf.image.random_saturation(image, lower=0.5, upper=1.5)
+            return image
+        def f2(image=image):
+            image = tf.image.random_saturation(image, lower=0.5, upper=1.5)
+            image = tf.image.random_brightness(image, max_delta=32. / 255.)            
+            return image
+        def f3(image=image):
+            image = tf.image.random_brightness(image, max_delta=32. / 255.)
+            image = tf.image.random_saturation(image, lower=0.5, upper=1.5)
+            image = tf.image.random_hue(image, max_delta=0.2)
+            image = tf.image.random_contrast(image, lower=0.5, upper=1.5)
+            return image 
+        def f4(image=image):
+            image = tf.image.random_saturation(image, lower=0.5, upper=1.5)
+            image = tf.image.random_brightness(image, max_delta=32. / 255.)
+            image = tf.image.random_contrast(image, lower=0.5, upper=1.5)
+            image = tf.image.random_hue(image, max_delta=0.2)                  
+            return image
+        def f5(image=image):
+            image = tf.image.random_contrast(image, lower=0.5, upper=1.5)
+            image = tf.image.random_hue(image, max_delta=0.2)
+            image = tf.image.random_brightness(image, max_delta=32. / 255.)
+            image = tf.image.random_saturation(image, lower=0.5, upper=1.5)
+            return image
+        def f6(image=image):
+            image = tf.image.random_hue(image, max_delta=0.2)
+            image = tf.image.random_saturation(image, lower=0.5, upper=1.5)
+            image = tf.image.random_contrast(image, lower=0.5, upper=1.5)
+            image = tf.image.random_brightness(image, max_delta=32. / 255.) 
+            return image
+        def f7(image=image):
+            return image            
+
+        image = tf.case({tf.equal(color_ordering, 0): f1,
+                         tf.equal(color_ordering, 1): f2, 
+                         tf.equal(color_ordering, 2): f3,
+                         tf.equal(color_ordering, 3): f4,
+                         tf.equal(color_ordering, 4): f5,
+                         tf.equal(color_ordering, 5): f6,
+                         },default=f7, exclusive=True)
+    
         return tf.clip_by_value(image, 0.0, 1.0)
 
 def tf_summary_image(image, bboxes, name='image', unwhitened=False):

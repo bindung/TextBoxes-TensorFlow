@@ -198,11 +198,7 @@ def main(_):
 				prec, rec = tfe.precision_recall(*tp_fp_metric[0][c])
 
 				# Average precision VOC07.
-				v = tfe.average_precision_voc07(prec, rec)
-				op = tf.summary.scalar('precision', prec[1], collections=[])
-				tf.add_to_collection(tf.GraphKeys.SUMMARIES, op)
-				op = tf.summary.scalar('recall', rec[1], collections=[])
-				tf.add_to_collection(tf.GraphKeys.SUMMARIES, op)				
+				v = tfe.average_precision_voc12(prec, rec)				
 				summary_name = 'ICDAR13/%s' % c
 				op = tf.summary.scalar(summary_name, v, collections=[])
 				# op = tf.Print(op, [v], summary_name)

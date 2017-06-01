@@ -48,10 +48,10 @@ tf.app.flags.DEFINE_integer(
 	'The number of parameter servers. If the value is 0, then the parameters '
 	'are handled locally by the worker.')
 tf.app.flags.DEFINE_integer(
-	'num_readers', 4,
+	'num_readers', 1,
 	'The number of parallel readers that read data from the dataset.')
 tf.app.flags.DEFINE_integer(
-	'num_preprocessing_threads', 4,
+	'num_preprocessing_threads', 2,
 	'The number of threads used to create the batches.')
 
 tf.app.flags.DEFINE_integer(
@@ -159,6 +159,8 @@ tf.app.flags.DEFINE_integer(
 tf.app.flags.DEFINE_string(
 	'model_name', 'text_box_300', 'The name of the architecture to train.')
 tf.app.flags.DEFINE_string(
+	'data_format', 'NCHW', 'data format.')
+tf.app.flags.DEFINE_string(
 	'preprocessing_name', None, 'The name of the preprocessing to use. If left '
 	'as `None`, then the model_name flag is used.')
 tf.app.flags.DEFINE_integer(
@@ -227,7 +229,7 @@ def main(_):
 		anchors = net.anchors(out_shape)
 
 		# create batch dataset
-		with tf.device(deploy_config.inputs_device()):
+		with tf.device('/cpu:0'):
 			b_image, b_glocalisations, b_gscores = \
 			load_batch.get_batch(FLAGS.dataset_dir,
 								 FLAGS.num_readers,
@@ -242,7 +244,7 @@ def main(_):
 				
 			batch_queue = slim.prefetch_queue.prefetch_queue(
 				tf_utils.reshape_list([b_image, b_glocalisations, b_gscores]),
-				capacity=2 * deploy_config.num_clones)
+				capacity=10 * deploy_config.num_clones)
 
 
 		# =================================================================== #
@@ -258,8 +260,12 @@ def main(_):
 			b_image, b_glocalisations, b_gscores = \
 				tf_utils.reshape_list(batch_queue.dequeue(), batch_shape)
 
+			if FLAGS.data_format=='NHWC':
+				b_image = b_image
+			else:
+				b_image = tf.transpose(b_image, perm=(0, 3, 1, 2))
 			# Construct SSD network.
-			arg_scope = net.arg_scope(weight_decay=FLAGS.weight_decay)
+			arg_scope = net.arg_scope(weight_decay=FLAGS.weight_decay,data_format=FLAGS.data_format)
 			with slim.arg_scope(arg_scope):
 				localisations, logits, end_points = \
 					net.net(b_image, is_training=True, use_batch=FLAGS.use_batch)

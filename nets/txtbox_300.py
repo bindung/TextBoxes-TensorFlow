@@ -203,6 +203,7 @@ def text_net(inputs,
 	  # epsilon to prevent 0s in variance.
 	  'epsilon': 0.001,
 	  'is_training': is_training,
+	  'fused': True
 	}
 	end_points = {}
 	with tf.variable_scope(scope, 'text_box_300', [inputs], reuse=reuse):
@@ -312,6 +313,7 @@ def text_multibox_layer(layer,
 	  'is_training': is_training,
 	  'zero_debias_moving_mean':False,
 	  'scale':False,
+	  'fused': True
 	}
 	net = inputs
 	if normalization > 0:
@@ -330,17 +332,10 @@ def text_multibox_layer(layer,
 						   scope='conv_loc',use_batch=use_batch, batch_norm_params=batch_norm_params)
 
 	loc_pred = custom_layers.channel_to_last(loc_pred)
-	loc_pred = tf.reshape(loc_pred, loc_pred.get_shape().as_list()[:-1] + [2,num_box,4])
+	loc_pred = tf.reshape(loc_pred, tensor_shape(loc_pred, 4)[:-1] + [2,num_box,4])
 	# Class prediction.
 	scores_pred = 2 * num_box * num_classes
 
-	batch_norm_params = {
-	  # Decay for the moving averages.
-	  'decay': 0.9997,
-	  # epsilon to prevent 0s in variance.
-	  'epsilon': 0.001,
-	  'is_training': is_training,
-	}
 	if(layer == 'global'):
 		sco_pred = conv2d(net, scores_pred, [1, 1], activation_fn=None, padding = 'VALID',
 						   scope='conv_cls',use_batch=use_batch, batch_norm_params=batch_norm_params)
