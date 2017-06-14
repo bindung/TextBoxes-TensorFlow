@@ -35,7 +35,7 @@ tf.app.flags.DEFINE_integer(
 tf.app.flags.DEFINE_integer(
 	'keep_top_k', 200, 'Keep top-k detected objects.')
 tf.app.flags.DEFINE_float(
-	'nms_threshold', 0.25, 'Non-Maximum Selection threshold.')
+	'nms_threshold', 0.45, 'Non-Maximum Selection threshold.')
 tf.app.flags.DEFINE_float(
 	'matching_threshold', 0.5, 'Matching threshold with groundtruth objects.')
 tf.app.flags.DEFINE_integer(
@@ -197,8 +197,16 @@ def main(_):
 				# Precison and recall values.
 				prec, rec = tfe.precision_recall(*tp_fp_metric[0][c])
 
+				op = tf.summary.scalar('precision', tf.reduce_max(prec), collections=[])
+				# op = tf.Print(op, [v], summary_name)
+				tf.add_to_collection(tf.GraphKeys.SUMMARIES, op)
+
+				op = tf.summary.scalar('recall', tf.reduce_max(rec), collections=[])
+				# op = tf.Print(op, [v], summary_name)
+				tf.add_to_collection(tf.GraphKeys.SUMMARIES, op)
+
 				# Average precision VOC07.
-				v = tfe.average_precision_voc12(prec, rec)				
+				v = tfe.average_precision_voc07(prec, rec)				
 				summary_name = 'ICDAR13/%s' % c
 				op = tf.summary.scalar(summary_name, v, collections=[])
 				# op = tf.Print(op, [v], summary_name)

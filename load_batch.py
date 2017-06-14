@@ -47,6 +47,7 @@ def get_batch(dataset_dir,
 		glocalisations, gscores = \
 			net.bboxes_encode( gbboxes, anchors, num)
 
+
 		batch_shape = [1] + [len(anchors)] * 2
 
 
@@ -54,7 +55,7 @@ def get_batch(dataset_dir,
 			tf_utils.reshape_list([image, glocalisations, gscores]),
 			batch_size=batch_size,
 			num_threads=FLAGS.num_preprocessing_threads,
-			capacity=10 * batch_size,
+			capacity=5 * batch_size,
 			)
 
 		b_image, b_glocalisations, b_gscores= \
@@ -75,7 +76,7 @@ def get_batch(dataset_dir,
 								   glocalisations, gscores]),
 			batch_size=batch_size,
 			num_threads=FLAGS.num_preprocessing_threads,
-			capacity=10 * batch_size,
+			capacity=50 * batch_size,
 			dynamic_pad=True)
 
 		image, glabels, gbboxes,g_bbox_img,glocalisations, gscores = \

@@ -40,7 +40,7 @@ _B_MEAN = 104.
 
 # Some training pre-processing parameters.
 BBOX_CROP_OVERLAP = 0.4      # Minimum overlap to keep a bbox after cropping.
-CROP_RATIO_RANGE = (0.3, 2.0)  # Distortion ratio during cropping.
+CROP_RATIO_RANGE = (0.7, 1.3)  # Distortion ratio during cropping.
 EVAL_SIZE = (300, 300)
 
 
@@ -114,55 +114,28 @@ def preprocess_for_train(image, labels, bboxes,
         if image.get_shape().ndims != 3:
             raise ValueError('Input must be of size [height, width, C>0]')
 
-        OBJECT_COVERED = [0.1,0.3,0.5,0.7,0.9]
-        # Convert to float scaled [0, 1].
-        image = tf.to_float(image)
+        image = tf.image.convert_image_dtype(image, dtype=tf.float32)
         num = tf.reduce_sum(tf.cast(labels, tf.int32))
         bboxes = tf.minimum(bboxes, 1.0)
         bboxes = tf.maximum(bboxes, 0.0)
     
-        '''
-        object_covered = np.random.randint(10)
-        if object_covered > 4:
-            image = tf_image.tf_image_whitened(image, [_R_MEAN, _G_MEAN, _B_MEAN])
-            image = tf_image.resize_image(image, out_shape,
-                                          method=tf.image.ResizeMethod.BICUBIC,
-                                          align_corners=False)
-            image.set_shape([out_shape[0], out_shape[1], 3])
-        else:
-            min_object_covered = OBJECT_COVERED[object_covered]
-            image, labels, bboxes, distort_bbox ,num= \
-                distorted_bounding_box_crop(image, labels, bboxes,
-                                            min_object_covered=min_object_covered,
-                                            aspect_ratio_range=CROP_RATIO_RANGE)
-        
-            # Resize image to output size.
-            image = tf_image.resize_image(image, out_shape,
-                                          method=tf.image.ResizeMethod.BICUBIC,
-                                          align_corners=False)
+        def update0(image=image, out_shape=out_shape,labels=labels,bboxes=bboxes):
             
+            image = tf_image.resize_image(image, out_shape,
+                                          method=tf.image.ResizeMethod.BICUBIC,
+                                          align_corners=False)
             image = tf_image.apply_with_random_selector(
                     image,
-                    lambda x, ordering: tf_image.distort_color_2(x, ordering, True),
+                    lambda x, ordering: tf_image.distort_color_2(x, ordering, False),
                     num_cases=4)
-            image = image *255
             image.set_shape([out_shape[0], out_shape[1], 3])
-            image = tf_image.tf_image_whitened(image, [_R_MEAN, _G_MEAN, _B_MEAN])
-        '''
-        def update0(image=image, out_shape=out_shape,labels=labels,bboxes=bboxes):
-            image = tf_image.tf_image_whitened(image, [_R_MEAN, _G_MEAN, _B_MEAN])
-            image = tf_image.resize_image(image, out_shape,
-                                          method=tf.image.ResizeMethod.BICUBIC,
-                                          align_corners=False)
-            image.set_shape([out_shape[0], out_shape[1], 3])           
+            image = tf_image.tf_image_whitened(image, [_R_MEAN/255., _G_MEAN/255., _B_MEAN/255.])       
             return image, labels, bboxes
 
         def update1(image=image, out_shape=out_shape,labels=labels,bboxes=bboxes):
-            object_cov=np.random.randint(5)
-            min_object_covered = OBJECT_COVERED[object_cov]
             image, labels, bboxes, distort_bbox ,num= \
                 distorted_bounding_box_crop(image, labels, bboxes,
-                                            min_object_covered=min_object_covered,
+                                            min_object_covered=0.1,
                                             aspect_ratio_range=CROP_RATIO_RANGE)
         
             # Resize image to output size.
@@ -170,22 +143,25 @@ def preprocess_for_train(image, labels, bboxes,
                                           method=tf.image.ResizeMethod.BICUBIC,
                                           align_corners=False)
             
-            image = image/255.
             image = tf_image.apply_with_random_selector(
                     image,
-                    lambda x, ordering: tf_image.distort_color_2(x, ordering, True),
+                    lambda x, ordering: tf_image.distort_color_2(x, ordering, False),
                     num_cases=4)
-            image = image *255
             image.set_shape([out_shape[0], out_shape[1], 3])
-            image = tf_image.tf_image_whitened(image, [_R_MEAN, _G_MEAN, _B_MEAN])
+            image = tf_image.tf_image_whitened(image, [_R_MEAN/255., _G_MEAN/255., _B_MEAN/255.])
             return image, labels, bboxes
 
         object_covered=tf.random_uniform([], minval=0, maxval=10, dtype=tf.int32, seed=None, name=None)
-        image, labels,bboxes = tf.cond(tf.greater(object_covered,tf.constant(4)), update0, update1)
+        image, labels,bboxes = tf.cond(tf.greater(object_covered,tf.constant(5)), update0, update1)
 
         image, bboxes = tf_image.random_flip_left_right(image, bboxes)
         num = tf.reduce_sum(tf.cast(labels, tf.int32))
         tf_image.tf_summary_image(image, bboxes)
+
+        if data_format=='NHWC':
+            b_image = b_image
+        else:
+            b_image = tf.transpose(b_image, perm=(2, 0, 1))
 
         return image, labels, bboxes,num
 
@@ -259,15 +235,20 @@ def preprocess_for_eval(image, labels, bboxes,
             mask = tf.logical_not(tf.cast(difficults, tf.bool))
             labels = tf.boolean_mask(labels, mask)
             bboxes = tf.boolean_mask(bboxes, mask)
+        image = image/255.
 
-        #image = image/255.0
+        if data_format=='NHWC':
+            b_image = b_image
+        else:
+            b_image = tf.transpose(b_image, perm=(2, 0, 1))
+
         return image, labels, bboxes, bbox_img, num
 
 def preprocess_image(image,
                      labels,
                      bboxes,
                      out_shape,
-                     use_whiten = True,
+                     data_format = 'NCHW',
                      is_training=False,
                      **kwargs):
     """Pre-process an given image.
@@ -282,9 +263,9 @@ def preprocess_image(image,
       A preprocessed image.
     """
     if is_training:
-        return preprocess_for_train(image, labels, bboxes,use_whiten=use_whiten,
+        return preprocess_for_train(image, labels, bboxes,data_format=data_format,
                                     out_shape=out_shape)
     else:
-        return preprocess_for_eval(image, labels, bboxes,use_whiten=use_whiten,
+        return preprocess_for_eval(image, labels, bboxes,data_format=data_format,
                                    out_shape=out_shape,
                                    **kwargs)

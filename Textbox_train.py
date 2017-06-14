@@ -241,10 +241,19 @@ def main(_):
 								 file_pattern = FLAGS.file_pattern,
 								 is_training = True,
 								 shuffe = FLAGS.shuffle_data)
-				
+			allgscores = []
+			allglocalization = []
+			for i in range(len(anchors)):
+				allgscores.append(tf.reshape(b_gscores[i], [-1]))
+				allglocalization.append(tf.reshape(b_glocalisations[i], [-1,4]))
+
+			b_gscores = tf.concat(allgscores, 0)		
+			b_glocalisations =tf.concat(allglocalization, 0)
+			
 			batch_queue = slim.prefetch_queue.prefetch_queue(
 				tf_utils.reshape_list([b_image, b_glocalisations, b_gscores]),
-				capacity=10 * deploy_config.num_clones)
+				num_threads=8,
+				capacity=16 * deploy_config.num_clones)
 
 
 		# =================================================================== #
@@ -256,14 +265,9 @@ def main(_):
 			#clones of network_fn. 
 			
 			# Dequeue batch.
-			batch_shape = [1] + [len(anchors)] * 2
+			batch_shape = [1]*3
 			b_image, b_glocalisations, b_gscores = \
 				tf_utils.reshape_list(batch_queue.dequeue(), batch_shape)
-
-			if FLAGS.data_format=='NHWC':
-				b_image = b_image
-			else:
-				b_image = tf.transpose(b_image, perm=(0, 3, 1, 2))
 			# Construct SSD network.
 			arg_scope = net.arg_scope(weight_decay=FLAGS.weight_decay,data_format=FLAGS.data_format)
 			with slim.arg_scope(arg_scope):
@@ -344,7 +348,7 @@ def main(_):
 			optimizer,
 			var_list=variables_to_train)
 		# Add total_loss to summary.
-		#summaries.add(tf.summary.scalar('total_loss', total_loss))
+		summaries.add(tf.summary.scalar('total_loss', total_loss))
 
 		# Create gradient updates.
 		grad_updates = optimizer.apply_gradients(clones_gradients,
@@ -357,8 +361,8 @@ def main(_):
 
 		# Add the summaries from the first clone. These contain the summaries
 		# created by model_fn and either optimize_clones() or _gather_clone_loss().
-		#summaries |= set(tf.get_collection(tf.GraphKeys.SUMMARIES,
-		#								   first_clone_scope))
+		summaries |= set(tf.get_collection(tf.GraphKeys.SUMMARIES,
+										   first_clone_scope))
 
 		# Merge all summaries together.
 		summary_op = tf.summary.merge(list(summaries), name='summary_op')
@@ -366,14 +370,18 @@ def main(_):
 		# =================================================================== #
 		# Kicks off the training.
 		# =================================================================== #
-		gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=FLAGS.gpu_memory_fraction)
+		gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=FLAGS.gpu_memory_fraction,
+									allocator_type="BFC")
 		config = tf.ConfigProto(gpu_options=gpu_options,
 								log_device_placement=False,
-								allow_soft_placement = True)
+								allow_soft_placement = True,								
+                                inter_op_parallelism_threads = 0,
+                                intra_op_parallelism_threads = 1,)
 		saver = tf.train.Saver(max_to_keep=5,
 							   keep_checkpoint_every_n_hours=1.0,
 							   write_version=2,
 							   pad_step_number=False)
+
 
 		slim.learning.train(
 			train_tensor,
