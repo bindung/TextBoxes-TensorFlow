@@ -16,27 +16,42 @@ CHECKPOINT_PATH=./checkpoints/vgg_16.ckpt
 CHECKPOINT_PATH=./checkpoints/model.ckpt-13889
 CHECKPOINT_PATH=./logs/momentum_0.001/model.ckpt-21218
 DATASET_DIR=./data/sythtext/
-TRAIN_DIR=./logs/momentum_hard_nagative/
-CUDA_VISIBLE_DEVICES=4,5,6,7 setsid python Textbox_train.py \
+TRAIN_DIR=./logs/train/test_runtime
+TF_ENABLE_WINOGRAD_NONFUSED=1 CUDA_VISIBLE_DEVICES=4,5,6,7 setsid python Textbox_train.py \
 	--train_dir=${TRAIN_DIR} \
 	--dataset_dir=${DATASET_DIR} \
-	--save_summaries_secs=300 \
+	--save_summaries_secs=60 \
 	--save_interval_secs=3600 \
 	--weight_decay=0.0005 \
 	--optimizer=momentum \
-	--learning_rate=0.0001 \
-	--loss_alpha=1.0 \
-	--batch_size=32 \
+	--learning_rate=0.001 \
+	--batch_size=8 \
 	--match_threshold=0.5 \
 	--num_samples=3200000 \
 	--gpu_memory_fraction=0.95 \
-	--max_number_of_steps=5000000 \
+	--max_number_of_steps=600 \
+    --use_batch=False \
 	--num_clones=4 \
+    --use_batch=False
 	--checkpoint_path=${CHECKPOINT_PATH} \
     --checkpoint_model_scope=text_box_300 \
     --ignore_missing_vars=True \
     --use_batch=True
-    --checkpoint_exclude_scopes=text_box_300/conv6,text_box_300/conv7,text_box_300/conv8,text_box_300/conv9,text_box_300/conv10,text_box_300/global,text_box_300/conv4_box,text_box_300/conv7_box,text_box_300/conv8_box,text_box_300/conv9_box,text_box_300/conv10_box,text_box_300/global_box \
+    
+
+
+
+CHECKPOINT_PATH=./logs/train/logs609
+EVAL_DIR=./logs/eval/logs609
+DATASET_DIR=./data/ICDAR2013/test
+CUDA_VISIBLE_DEVICES=0 setsid python eval.py \
+    --eval_dir=${EVAL_DIR} \
+    --dataset_dir=${DATASET_DIR} \
+    --checkpoint_path=${CHECKPOINT_PATH} \
+    --wait_for_checkpoints=True \
+    --batch_size=1 \
+    --use_batch=False \
+    --gpu_memory_fraction=0.02
 
 
 

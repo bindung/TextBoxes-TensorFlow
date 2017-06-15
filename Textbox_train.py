@@ -74,7 +74,7 @@ tf.app.flags.DEFINE_integer(
 # Optimization Flags.
 # =========================================================================== #
 tf.app.flags.DEFINE_float(
-	'weight_decay', 0.00004, 'The weight decay on the model weights_1.')
+	'weight_decay', 0.0005, 'The weight decay on the model weights_1.')
 tf.app.flags.DEFINE_string(
 	'optimizer', 'rmsprop',
 	'The name of the optimizer, one of "adadelta", "adagrad", "adam",'
@@ -131,7 +131,7 @@ tf.app.flags.DEFINE_float(
 	'The decay to use for the moving average.'
 	'If left as None, then moving averages are not used.')
 tf.app.flags.DEFINE_boolean(
-	'use_batch', True,
+	'use_batch', False,
 	'Wheather use batch_norm or not')
 tf.app.flags.DEFINE_boolean(
 	'use_hard_neg', True,

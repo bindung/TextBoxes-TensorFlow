@@ -115,21 +115,25 @@ def preprocess_for_train(image, labels, bboxes,
             raise ValueError('Input must be of size [height, width, C>0]')
 
         image = tf.image.convert_image_dtype(image, dtype=tf.float32)
+            
+        image = tf_image.apply_with_random_selector(
+                image,
+                lambda x, method: tf.image.resize_images(x, (700,700), method),
+                num_cases=4)
         num = tf.reduce_sum(tf.cast(labels, tf.int32))
         bboxes = tf.minimum(bboxes, 1.0)
         bboxes = tf.maximum(bboxes, 0.0)
     
         def update0(image=image, out_shape=out_shape,labels=labels,bboxes=bboxes):
             
-            image = tf_image.resize_image(image, out_shape,
-                                          method=tf.image.ResizeMethod.BICUBIC,
-                                          align_corners=False)
             image = tf_image.apply_with_random_selector(
-                    image,
-                    lambda x, ordering: tf_image.distort_color_2(x, ordering, False),
-                    num_cases=4)
+                image,
+                lambda x, method: tf.image.resize_images(x, out_shape, method),
+                num_cases=4)
+
             image.set_shape([out_shape[0], out_shape[1], 3])
-            image = tf_image.tf_image_whitened(image, [_R_MEAN/255., _G_MEAN/255., _B_MEAN/255.])       
+            #image = tf_image.tf_image_whitened(image, [_R_MEAN/255., _G_MEAN/255., _B_MEAN/255.]) 
+            image = image * 255.      
             return image, labels, bboxes
 
         def update1(image=image, out_shape=out_shape,labels=labels,bboxes=bboxes):
@@ -139,29 +143,28 @@ def preprocess_for_train(image, labels, bboxes,
                                             aspect_ratio_range=CROP_RATIO_RANGE)
         
             # Resize image to output size.
-            image = tf_image.resize_image(image, out_shape,
-                                          method=tf.image.ResizeMethod.BICUBIC,
-                                          align_corners=False)
             
             image = tf_image.apply_with_random_selector(
-                    image,
-                    lambda x, ordering: tf_image.distort_color_2(x, ordering, False),
-                    num_cases=4)
+                image,
+                lambda x, method: tf.image.resize_images(x, out_shape, method),
+                num_cases=4)
+                      
             image.set_shape([out_shape[0], out_shape[1], 3])
-            image = tf_image.tf_image_whitened(image, [_R_MEAN/255., _G_MEAN/255., _B_MEAN/255.])
+            #image = tf_image.tf_image_whitened(image, [_R_MEAN/255., _G_MEAN/255., _B_MEAN/255.])
+            image = image * 255.      
             return image, labels, bboxes
 
         object_covered=tf.random_uniform([], minval=0, maxval=10, dtype=tf.int32, seed=None, name=None)
-        image, labels,bboxes = tf.cond(tf.greater(object_covered,tf.constant(5)), update0, update1)
+        image, labels,bboxes = tf.cond(tf.greater(object_covered,tf.constant(7)), update0, update1)
 
         image, bboxes = tf_image.random_flip_left_right(image, bboxes)
         num = tf.reduce_sum(tf.cast(labels, tf.int32))
         tf_image.tf_summary_image(image, bboxes)
 
         if data_format=='NHWC':
-            b_image = b_image
+            image = image
         else:
-            b_image = tf.transpose(b_image, perm=(2, 0, 1))
+            image = tf.transpose(image, perm=(2, 0, 1))
 
         return image, labels, bboxes,num
 
@@ -187,8 +190,8 @@ def preprocess_for_eval(image, labels, bboxes,
             raise ValueError('Input must be of size [height, width, C>0]')
 
         image = tf.to_float(image)
-        if use_whiten:
-            image = tf_image.tf_image_whitened(image, [_R_MEAN, _G_MEAN, _B_MEAN])
+        
+        #image = tf_image.tf_image_whitened(image, [_R_MEAN, _G_MEAN, _B_MEAN])
         num = 0
         if labels is not None:
             num = tf.reduce_sum(tf.cast(labels, tf.int32))
@@ -235,12 +238,11 @@ def preprocess_for_eval(image, labels, bboxes,
             mask = tf.logical_not(tf.cast(difficults, tf.bool))
             labels = tf.boolean_mask(labels, mask)
             bboxes = tf.boolean_mask(bboxes, mask)
-        image = image/255.
 
         if data_format=='NHWC':
-            b_image = b_image
+            image = image
         else:
-            b_image = tf.transpose(b_image, perm=(2, 0, 1))
+            image = tf.transpose(image, perm=(2, 0, 1))
 
         return image, labels, bboxes, bbox_img, num
 
