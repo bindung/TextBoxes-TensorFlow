@@ -29,8 +29,8 @@ def get_batch(dataset_dir,
 	provider = slim.dataset_data_provider.DatasetDataProvider(
 				dataset,
 				num_readers=num_readers,
-				common_queue_capacity=20 * batch_size,
-				common_queue_min=10 * batch_size,
+				common_queue_capacity=1024 * 16 + 20 * batch_size,
+				common_queue_min=1024 * 16,
 				shuffle=shuffe)
 	
 	[image, shape, glabels, gbboxes] = provider.get(['image', 'shape',
@@ -51,11 +51,12 @@ def get_batch(dataset_dir,
 		batch_shape = [1] + [len(anchors)] * 2
 
 
-		r = tf.train.batch(
+		r = tf.train.shuffle_batch(
 			tf_utils.reshape_list([image, glocalisations, gscores]),
 			batch_size=batch_size,
 			num_threads=FLAGS.num_preprocessing_threads,
-			capacity=5 * batch_size,
+			capacity=100 * batch_size,
+			min_after_dequeue= 50 * batch_size
 			)
 
 		b_image, b_glocalisations, b_gscores= \
