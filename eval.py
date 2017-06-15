@@ -23,7 +23,7 @@ slim = tf.contrib.slim
 # List of recalls values at which precision is evaluated.
 LIST_RECALLS = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.85,
 				0.90, 0.95, 0.96, 0.97, 0.98, 0.99]
-DATA_FORMAT = 'NHWC'
+DATA_FORMAT = 'NCHW'
 
 # =========================================================================== #
 # SSD evaluation Flags.
@@ -135,8 +135,8 @@ def main(_):
 			localisations, logits, end_points  = \
 				net.net(b_image, is_training=False, use_batch=FLAGS.use_batch)
 		# Add losses functions.
-		total_loss = net.losses(logits, localisations,
-							  b_glocalisations, b_gscores)
+		#total_loss = net.losses(logits, localisations,
+		#					  b_glocalisations, b_gscores)
 		predictions = []
 		for i in range(len(logits)):
 			predictions.append(slim.softmax(logits[i]))

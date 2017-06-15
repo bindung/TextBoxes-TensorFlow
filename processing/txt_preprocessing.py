@@ -157,11 +157,14 @@ def preprocess_for_train(image, labels, bboxes,
         image, bboxes = tf_image.random_flip_left_right(image, bboxes)
         num = tf.reduce_sum(tf.cast(labels, tf.int32))
         tf_image.tf_summary_image(image, bboxes)
+        image = tf.subtract(image, 0.5)
+        image = tf.multiply(image, 2.0)
 
         if data_format=='NHWC':
-            b_image = b_image
+            image = image
         else:
-            b_image = tf.transpose(b_image, perm=(2, 0, 1))
+            image = tf.transpose(image, perm=(2, 0, 1))
+
 
         return image, labels, bboxes,num
 
@@ -236,11 +239,13 @@ def preprocess_for_eval(image, labels, bboxes,
             labels = tf.boolean_mask(labels, mask)
             bboxes = tf.boolean_mask(bboxes, mask)
         image = image/255.
-
+        image = tf.subtract(image, 0.5)
+        image = tf.multiply(image, 2.0)
+        
         if data_format=='NHWC':
-            b_image = b_image
+            image = image
         else:
-            b_image = tf.transpose(b_image, perm=(2, 0, 1))
+            image = tf.transpose(image, perm=(2, 0, 1))
 
         return image, labels, bboxes, bbox_img, num
 
