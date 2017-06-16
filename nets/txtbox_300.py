@@ -344,7 +344,7 @@ def text_multibox_layer(layer,
 						   scope='conv_cls',use_batch=use_batch, batch_norm_params=batch_norm_params)
 
 	sco_pred = custom_layers.channel_to_last(sco_pred)
-	sco_pred = tf.reshape(sco_pred, loc_pred.get_shape().as_list()[:-1] + [2 ,num_box,num_classes])
+	sco_pred = tf.reshape(sco_pred, sco_pred.get_shape().as_list()[:-1] + [2 ,num_box,num_classes])
 	return sco_pred, loc_pred
 
 
@@ -399,7 +399,7 @@ def text_losses(logits, localisations,
 			   glocalisations, gscores,
 			   match_threshold,
 			   use_hard_neg=False,
-			   negative_ratio=3.,
+			   negative_ratio=3,
 			   alpha=1.,
 			   label_smoothing=0.,
 			   scope=None):
@@ -428,7 +428,7 @@ def text_losses(logits, localisations,
 						   tf.cast(tf.zeros_like(ipmask),tf.float32),
 						   loss)
 		loss_neg_flat = tf.reshape(loss_neg, [-1])
-		n_neg = tf.minimum(negative_ratio*n_pos, tf.cast(n,tf.int32))
+		n_neg = tf.minimum(np.int32(negative_ratio)*n_pos, tf.cast(n,tf.int32))
 		val, idxes = tf.nn.top_k(loss_neg_flat, k=n_neg)
 		minval = val[-1]
 		nmask = tf.logical_and(nmask, loss_neg >= minval)

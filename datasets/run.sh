@@ -16,35 +16,29 @@ CHECKPOINT_PATH=./checkpoints/vgg_16.ckpt
 CHECKPOINT_PATH=./checkpoints/model.ckpt-13889
 CHECKPOINT_PATH=./logs/momentum_0.001/model.ckpt-21218
 DATASET_DIR=./data/sythtext/
-TRAIN_DIR=./logs/train/test_runtime
-TF_ENABLE_WINOGRAD_NONFUSED=1 CUDA_VISIBLE_DEVICES=4,5,6,7 setsid python Textbox_train.py \
+TRAIN_DIR=./logs/train/logs609
+TF_ENABLE_WINOGRAD_NONFUSED=1 CUDA_VISIBLE_DEVICES=0,1,2,3 setsid python Textbox_train.py \
 	--train_dir=${TRAIN_DIR} \
 	--dataset_dir=${DATASET_DIR} \
 	--save_summaries_secs=60 \
-	--save_interval_secs=3600 \
+	--save_interval_secs=1800 \
 	--weight_decay=0.0005 \
-	--optimizer=momentum \
-	--learning_rate=0.001 \
+	--learning_rate=0.0005 \
 	--batch_size=8 \
-	--match_threshold=0.5 \
-	--num_samples=3200000 \
-	--gpu_memory_fraction=0.95 \
-	--max_number_of_steps=600 \
+	--num_samples=800000 \
+	--gpu_memory_fraction=0.5 \
+	--max_number_of_steps=600000 \
     --use_batch=False \
 	--num_clones=4 \
-    --use_batch=False
-	--checkpoint_path=${CHECKPOINT_PATH} \
-    --checkpoint_model_scope=text_box_300 \
-    --ignore_missing_vars=True \
-    --use_batch=True
+    --negative_ratio=1
     
 
 
 
-CHECKPOINT_PATH=./logs/train/logs609
-EVAL_DIR=./logs/eval/logs609
-DATASET_DIR=./data/ICDAR2013/test
-CUDA_VISIBLE_DEVICES=0 setsid python eval.py \
+CHECKPOINT_PATH=./logs/train/logs609_train
+EVAL_DIR=./logs/eval/logs609_train
+DATASET_DIR=./data/ICDAR2013/train
+CUDA_VISIBLE_DEVICES=1 setsid python eval.py \
     --eval_dir=${EVAL_DIR} \
     --dataset_dir=${DATASET_DIR} \
     --checkpoint_path=${CHECKPOINT_PATH} \
