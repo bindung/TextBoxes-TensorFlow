@@ -18,13 +18,22 @@ For now, the model can detect most of boxes. But still has poor performance on s
 
 # Train
 
+## Data preparation
+
+1. download the sythtext data from [link](http://www.robots.ox.ac.uk/~vgg/data/scenetext/)
+2. Unzip the datasets and put all folders and files under `/data/sythtext/`
+3. `cd datasets` and run script `python data2record.py`
+4. The ICDAR2013 datasets follow the same pipeline. 
+
+
+
 ## Train from scratch
 You can train this model from scratch by using following command.
 
 ``` bash
 DATASET_DIR=./data/sythtext/
-TRAIN_DIR=./logs/train/logs614
-TF_ENABLE_WINOGRAD_NONFUSED=1 CUDA_VISIBLE_DEVICES=4,5,6,7 setsid python Textbox_train.py \
+TRAIN_DIR=./logs/train
+CUDA_VISIBLE_DEVICES=0,1,2,3 setsid python Textbox_train.py \
 	--train_dir=${TRAIN_DIR} \
 	--dataset_dir=${DATASET_DIR} \
 	--save_summaries_secs=60 \
@@ -38,10 +47,34 @@ TF_ENABLE_WINOGRAD_NONFUSED=1 CUDA_VISIBLE_DEVICES=4,5,6,7 setsid python Textbox
 	--max_number_of_steps=500000 \
     --use_batch=False \
 	--num_clones=4 \
+```
+## Train form checkpoint file
+
+You can download vgg checkpoint from web and put it under checkpoints folder. To train the model from checkpoint(suggested), please run the following lines
+
+```
+# or change into your checkpoint file name
+CHECKPOINT_PATH=./checkpoints/vgg_16.ckpt 
+DATASET_DIR=./data/sythtext/
+TRAIN_DIR=./logs/train
+CUDA_VISIBLE_DEVICES=0,1,2,3 setsid python Textbox_train.py \
+	--train_dir=${TRAIN_DIR} \
+	--dataset_dir=${DATASET_DIR} \
+	--save_summaries_secs=60 \
+	--save_interval_secs=1800 \
+	--weight_decay=0.0005 \
+	--learning_rate=0.001 \
+	--batch_size=8 \
+	--num_samples=800000 \
+	--gpu_memory_fraction=0.42 \
+	--max_number_of_steps=500000 \
+    --use_batch=False \
+	--num_clones=4 \
 	--checkpoint_path=${CHECKPOINT_PATH} \
-    --checkpoint_model_scope=text_box_300 \
+    --checkpoint_model_scope=vgg_16 \
     --ignore_missing_vars=True \
 ```
+
 
 ## Evalation on checkpoint
 
@@ -59,6 +92,11 @@ CUDA_VISIBLE_DEVICES=4 setsid python eval.py \
     --gpu_memory_fraction=0.02 \
     --use_batch=False \
 ```
+
+## Further instruction
+
+For further instruction on how to use slim. please check on 
+[slim](https://github.com/tensorflow/models/tree/master/slim/) project.
 
 # Problems to be solved： 
 
