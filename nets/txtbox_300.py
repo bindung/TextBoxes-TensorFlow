@@ -235,7 +235,7 @@ def text_net(inputs,
 		# Block 6: let's dilate the hell out of it!
 		#net = slim.conv2d(net, 1024, [3, 3], scope='conv6')
 		#net = conv2d(net, 1024, [3,3], scope='conv6',rate=1, use_batch=use_batch, batch_norm_params= batch_norm_params)
-		net = conv2d(net, 1024, [3,3], scope='conv6',rate=6, use_batch=use_batch, batch_norm_params= batch_norm_params)
+		net = conv2d(net, 1024, [3,3], scope='conv6',rate=1, use_batch=use_batch, batch_norm_params= batch_norm_params)
 		end_points['conv6'] = net
 		# Block 7: 1x1 conv. Because the fuck.
 		#net = slim.conv2d(net, 1024, [1, 1], scope='conv7')
@@ -316,8 +316,10 @@ def text_multibox_layer(layer,
 	  'fused':True,
 	}
 	net = inputs
+	'''
 	if normalization > 0:
 		net = custom_layers.l2_normalization(net, scaling=True)
+	'''
 	# Number of anchors.
 	num_box = 6
 	num_classes = 2

@@ -1,5 +1,3 @@
-
-
 """
 Train scripts
 
@@ -283,14 +281,11 @@ def main(_):
 			return end_points
 
 		
+		summaries = set(tf.get_collection(tf.GraphKeys.SUMMARIES))
 
 		clones = model_deploy.create_clones(deploy_config, clone_fn, [batch_queue])
 		first_clone_scope = deploy_config.clone_scope(0)
 
-		# Gather summaries.
-		summaries = set(tf.get_collection(tf.GraphKeys.SUMMARIES,first_clone_scope))
-		# Gather update_ops from the first clone. These contain, for example,
-		# the updates for the batch_norm variables created by network_fn.
 		update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS, first_clone_scope)
 
 		
@@ -298,15 +293,7 @@ def main(_):
 		for end_point in end_points:
 			x = end_points[end_point]
 			summaries.add(tf.summary.histogram('activations/' + end_point, x))
-			#summaries.add(tf.summary.scalar('sparsity/' + end_point,
-			#								tf.nn.zero_fraction(x)))
-		
 
-		#for loss in tf.get_collection(tf.GraphKeys.LOSSES):
-		#	summaries.add(tf.summary.scalar(loss.op.name, loss))
-		# Add summaries for losses.
-		#for loss in tf.get_collection(tf.GraphKeys.LOSSES, first_clone_scope):
-		#  summaries.add(tf.summary.scalar('losses/%s' % loss.op.name, loss))
 
 		for loss in tf.get_collection('EXTRA_LOSSES',first_clone_scope):
 			summaries.add(tf.summary.scalar(loss.op.name, loss))

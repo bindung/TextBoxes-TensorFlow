@@ -361,7 +361,6 @@ def distort_color_2(image, color_ordering=0, fast_mode=True, scope=None):
         ValueError: if color_ordering not in [0, 3]
     """
     #color_ordering = np.random.randint(4)
-    '''
     with tf.name_scope(scope, 'distort_color', [image]):
         if fast_mode:
             if color_ordering == 0:
@@ -394,51 +393,7 @@ def distort_color_2(image, color_ordering=0, fast_mode=True, scope=None):
             else:
                 raise ValueError('color_ordering must be in [0, 3]')
         # The random_* ops do not necessarily clamp
-        '''
-    with tf.name_scope(scope, 'distort_color', [image]):
-        color_ordering = tf.random_uniform([], minval=0, maxval=6, dtype=tf.int32, seed=None, name=None)
-        def f1(image=image):
-            image = tf.image.random_brightness(image, max_delta=32. / 255.)
-            image = tf.image.random_saturation(image, lower=0.5, upper=1.5)
-            return image
-        def f2(image=image):
-            image = tf.image.random_saturation(image, lower=0.5, upper=1.5)
-            image = tf.image.random_brightness(image, max_delta=32. / 255.)            
-            return image
-        def f3(image=image):
-            image = tf.image.random_brightness(image, max_delta=32. / 255.)
-            image = tf.image.random_saturation(image, lower=0.5, upper=1.5)
-            image = tf.image.random_hue(image, max_delta=0.2)
-            image = tf.image.random_contrast(image, lower=0.5, upper=1.5)
-            return image 
-        def f4(image=image):
-            image = tf.image.random_saturation(image, lower=0.5, upper=1.5)
-            image = tf.image.random_brightness(image, max_delta=32. / 255.)
-            image = tf.image.random_contrast(image, lower=0.5, upper=1.5)
-            image = tf.image.random_hue(image, max_delta=0.2)                  
-            return image
-        def f5(image=image):
-            image = tf.image.random_contrast(image, lower=0.5, upper=1.5)
-            image = tf.image.random_hue(image, max_delta=0.2)
-            image = tf.image.random_brightness(image, max_delta=32. / 255.)
-            image = tf.image.random_saturation(image, lower=0.5, upper=1.5)
-            return image
-        def f6(image=image):
-            image = tf.image.random_hue(image, max_delta=0.2)
-            image = tf.image.random_saturation(image, lower=0.5, upper=1.5)
-            image = tf.image.random_contrast(image, lower=0.5, upper=1.5)
-            image = tf.image.random_brightness(image, max_delta=32. / 255.) 
-            return image
-        def f7(image=image):
-            return image            
 
-        image = tf.case({tf.equal(color_ordering, 0): f1,
-                         tf.equal(color_ordering, 1): f2, 
-                         tf.equal(color_ordering, 2): f3,
-                         tf.equal(color_ordering, 3): f4,
-                         tf.equal(color_ordering, 4): f5,
-                         tf.equal(color_ordering, 5): f6,
-                         },default=f7, exclusive=True)
     
         return tf.clip_by_value(image, 0.0, 1.0)
 
@@ -516,3 +471,31 @@ def apply_with_random_selector(x, func, num_cases):
     return control_flow_ops.merge([
             func(control_flow_ops.switch(x, tf.equal(sel, case))[1], case)
             for case in range(num_cases)])[0]
+
+
+def _apply_with_random_selector_tuples(x, func, num_cases):
+    """Computes func(x, sel), with sel sampled from [0...num_cases-1].
+
+    Args:
+        x: A tuple of input tensors.
+        func: Python function to apply.
+        num_cases: Python int32, number of cases to sample sel from.
+
+    Returns:
+        The result of func(x, sel), where func receives the value of the
+        selector as a python integer, but sel is sampled dynamically.
+    """
+    num_inputs = len(x)
+    rand_sel = tf.random_uniform([], maxval=num_cases, dtype=tf.int32)
+    # Pass the real x only to one of the func calls.
+
+    tuples = [list() for t in x]
+    for case in range(num_cases):
+        new_x = [control_flow_ops.switch(t, tf.equal(rand_sel, case))[1] for t in x]
+        output = func(tuple(new_x), case)
+        for j in range(num_inputs):
+            tuples[j].append(output[j])
+
+    for i in range(num_inputs):
+        tuples[i] = control_flow_ops.merge(tuples[i])[0]
+    return tuple(tuples)

@@ -72,15 +72,14 @@ def distorted_bounding_box_crop(image,
     Returns:
         A tuple, a 3-D Tensor cropped_image and the distorted bbox
     """
-    with tf.name_scope(scope, 'distorted_bounding_box_crop', [image, bboxes]):
+    with tf.name_scope(scope, 'distorted_bounding_box_crop', [image,labels,bboxes]):
         # Each bounding box has shape [1, num_boxes, box coords] and
         # the coordinates are ordered [ymin, xmin, ymax, xmax].
-
         bbox_begin, bbox_size, distort_bbox = tf.image.sample_distorted_bounding_box(
                 tf.shape(image),
                 bounding_boxes=tf.expand_dims(bboxes, 0),
                 min_object_covered=min_object_covered,
-                aspect_ratio_range=aspect_ratio_range,
+                aspect_ratio_range=CROP_RATIO_RANGE,
                 area_range=area_range,
                 max_attempts=max_attempts,
                 use_image_if_no_bounding_boxes=False)
@@ -93,7 +92,7 @@ def distorted_bounding_box_crop(image,
         bboxes = tfe.bboxes_resize(distort_bbox, bboxes)
         labels, bboxes, num = tfe.bboxes_filter_overlap(labels, bboxes,
                                                    BBOX_CROP_OVERLAP)
-        return cropped_image, labels, bboxes, distort_bbox,num
+        return cropped_image, labels, bboxes,num
 
 
 def preprocess_for_train(image, labels, bboxes,
@@ -115,11 +114,7 @@ def preprocess_for_train(image, labels, bboxes,
             raise ValueError('Input must be of size [height, width, C>0]')
 
         image = tf.image.convert_image_dtype(image, dtype=tf.float32)
-            
-        image = tf_image.apply_with_random_selector(
-                image,
-                lambda x, method: tf.image.resize_images(x, (700,700), method),
-                num_cases=4)
+
         num = tf.reduce_sum(tf.cast(labels, tf.int32))
         bboxes = tf.minimum(bboxes, 1.0)
         bboxes = tf.maximum(bboxes, 0.0)
@@ -130,25 +125,43 @@ def preprocess_for_train(image, labels, bboxes,
                 image,
                 lambda x, method: tf.image.resize_images(x, out_shape, method),
                 num_cases=4)
-
+            '''
+            image = tf_image.apply_with_random_selector(
+                    image,
+                    lambda x, ordering: tf_image.distort_color_2(x, ordering, True),
+                    num_cases=4)
+            '''
             image.set_shape([out_shape[0], out_shape[1], 3])
             #image = tf_image.tf_image_whitened(image, [_R_MEAN/255., _G_MEAN/255., _B_MEAN/255.])      
             return image, labels, bboxes
 
         def update1(image=image, out_shape=out_shape,labels=labels,bboxes=bboxes):
-            image, labels, bboxes, distort_bbox ,num= \
-                distorted_bounding_box_crop(image, labels, bboxes,
-                                            min_object_covered=0.1,
-                                            aspect_ratio_range=CROP_RATIO_RANGE)
-        
+            num = tf.constant(1)
+            def random_distorted_bounding_box_crop(vals, index):
+                object_covered=(0.1, 0.3, 0.5, 0.7, 0.9, 1.0)
+                image, labels, bboxes,num = vals
+                return distorted_bounding_box_crop(image, labels, bboxes, 
+                                                   min_object_covered = object_covered[index])
+
+            vals = \
+                tf_image._apply_with_random_selector_tuples((image,labels, bboxes,num),
+                    random_distorted_bounding_box_crop,
+                    num_cases = 6)
+            image, labels, bboxes ,num = vals
             # Resize image to output size.
             
             image = tf_image.apply_with_random_selector(
                 image,
                 lambda x, method: tf.image.resize_images(x, out_shape, method),
                 num_cases=4)
-                      
+            '''
+            image = tf_image.apply_with_random_selector(
+                    image,
+                    lambda x, ordering: tf_image.distort_color_2(x, ordering, True),
+                    num_cases=4)        
+            '''
             image.set_shape([out_shape[0], out_shape[1], 3])
+
             #image = tf_image.tf_image_whitened(image, [_R_MEAN/255., _G_MEAN/255., _B_MEAN/255.])    
             return image, labels, bboxes
 
