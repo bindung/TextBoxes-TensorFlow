@@ -417,10 +417,10 @@ def text_losses(logits, localisations,
 
 		pmask = gscores > match_threshold
 		ipmask = tf.cast(pmask ,tf.int32)
-		n_pos = tf.reduce_sum(ipmask,name = 'num_of_positive')
-		num = tf.ones_like(gscores)
-		n = tf.reduce_sum(num)
 		fpmask = tf.cast(pmask , tf.float32)
+		n_pos = tf.reduce_sum(fpmask,name = 'num_of_positive')
+		num = tf.ones_like(gscores, dtype = tf.float32)
+		n = tf.reduce_sum(num)
 		nmask = gscores <= match_threshold
 
 		loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=alllogits,labels=ipmask)
