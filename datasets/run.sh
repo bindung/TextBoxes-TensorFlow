@@ -15,22 +15,23 @@ CHECKPOINT_PATH=./logs_426/model.ckpt-48406
 CHECKPOINT_PATH=./checkpoints/vgg_16.ckpt
 CHECKPOINT_PATH=./checkpoints/model.ckpt-13889
 CHECKPOINT_PATH=./logs/momentum_0.001/model.ckpt-21218
-DATASET_DIR=./data/sythtext/
-TRAIN_DIR=./logs/train/logs609
+DATASET_DIR=./data/sythtext_mini/
+TRAIN_DIR=./logs/train/scratch
 TF_ENABLE_WINOGRAD_NONFUSED=1 CUDA_VISIBLE_DEVICES=0,1,2,3 setsid python Textbox_train.py \
 	--train_dir=${TRAIN_DIR} \
 	--dataset_dir=${DATASET_DIR} \
 	--save_summaries_secs=60 \
 	--save_interval_secs=1800 \
 	--weight_decay=0.0005 \
-	--learning_rate=0.0005 \
-	--batch_size=8 \
+	--learning_rate=0.004 \
+	--batch_size=32 \
 	--num_samples=800000 \
-	--gpu_memory_fraction=0.5 \
-	--max_number_of_steps=600000 \
-    --use_batch=False \
+	--gpu_memory_fraction=0.95 \
+	--max_number_of_steps=250000 \
+    --use_batch=True \
 	--num_clones=4 \
-    --negative_ratio=1
+    --negative_ratio=1 \
+    --learning_rate_decay_factor=0.5
     
 
 

@@ -20,7 +20,7 @@ slim = tf.contrib.slim
 tf.app.flags.DEFINE_float(
 	'loss_alpha', 1., 'Alpha parameter in the loss function.')
 tf.app.flags.DEFINE_float(
-	'negative_ratio', 3, 'Negative ratio in the loss function.')
+	'negative_ratio', 1., 'Negative ratio in the loss function.')
 tf.app.flags.DEFINE_float(
 	'match_threshold', 0.5, 'Matching threshold in the loss function.')
 tf.app.flags.DEFINE_string(
@@ -51,7 +51,6 @@ tf.app.flags.DEFINE_integer(
 tf.app.flags.DEFINE_integer(
 	'num_preprocessing_threads', 2,
 	'The number of threads used to create the batches.')
-
 tf.app.flags.DEFINE_integer(
 	'log_every_n_steps', 10,
 	'The frequency with which logs are print.')
@@ -59,12 +58,11 @@ tf.app.flags.DEFINE_integer(
 	'save_summaries_secs', 60,
 	'The frequency with which summaries are saved, in seconds.')
 tf.app.flags.DEFINE_integer(
-	'save_interval_secs', 600,
+	'save_interval_secs', 1800,
 	'The frequency with which the model is saved, in seconds.')
 tf.app.flags.DEFINE_float(
-	'gpu_memory_fraction', 0.8
+	'gpu_memory_fraction', 0.90
 	, 'GPU memory fraction to use.')
-
 tf.app.flags.DEFINE_integer(
 	'task', 0, 'Task id of the replica running the training.')
 
@@ -74,7 +72,7 @@ tf.app.flags.DEFINE_integer(
 tf.app.flags.DEFINE_float(
 	'weight_decay', 0.0005, 'The weight decay on the model weights_1.')
 tf.app.flags.DEFINE_string(
-	'optimizer', 'rmsprop',
+	'optimizer', 'momentum',
 	'The name of the optimizer, one of "adadelta", "adagrad", "adam",'
 	'"ftrl", "momentum", "sgd" or "rmsprop".')
 tf.app.flags.DEFINE_float(
@@ -115,7 +113,7 @@ tf.app.flags.DEFINE_string(
 	' or "polynomial"')
 tf.app.flags.DEFINE_float('learning_rate', 0.001, 'Initial learning rate.')
 tf.app.flags.DEFINE_float(
-	'end_learning_rate', 0.00005,
+	'end_learning_rate', 0.0001,
 	'The minimal end learning rate used by a polynomial decay learning rate.')
 tf.app.flags.DEFINE_float(
 	'label_smoothing', 0.0, 'The amount of label smoothing.')
