@@ -425,26 +425,26 @@ def text_losses(logits, localisations,
 
 		loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=alllogits,labels=ipmask)
 		#l_cross_pos = tf.losses.compute_weighted_loss(loss, fpmask)
-		l_cross_pos = tf.reduce_mean(loss * fpmask ,name = 'l_cross_pos')
+		l_cross_pos = tf.div(tf.reduce_(loss * fpmask), n_pos ,name = 'l_cross_pos')
 
 		loss_neg = tf.where(pmask,
 						   tf.cast(tf.zeros_like(ipmask),tf.float32),
 						   loss)
 		loss_neg_flat = tf.reshape(loss_neg, [-1])
 		n_neg = tf.minimum(negative_ratio*n_pos, n)
-		n_neg = tf.cast(n_neg, tf.int32,name = 'num_of_negative')
-		val, idxes = tf.nn.top_k(loss_neg_flat, k=n_neg)
+		n_neg_i = tf.cast(n_neg, tf.int32,name = 'num_of_negative')
+		val, idxes = tf.nn.top_k(loss_neg_flat, k=n_neg_i)
 		minval = val[-1]
 		nmask = tf.logical_and(nmask, loss_neg >= minval)
 
 		fnmask = tf.cast(nmask, tf.float32)
 		#l_cross_neg = tf.losses.compute_weighted_loss(loss, fnmask)
-		l_cross_neg = tf.reduce_mean(loss * fnmask ,name = 'l_cross_neg')
+		l_cross_neg = tf.div(tf.reduce_mean(loss * fnmask), n_neg ,name = 'l_cross_neg')
 
 		weights = tf.expand_dims(fpmask, axis=-1)
 		l_loc = custom_layers.abs_smooth(alllocalization - glocalisations)
 		#l_loc = tf.losses.compute_weighted_loss(l_loc, weights)
-		l_loc = tf.reduce_mean(l_loc * weights, name = 'l_loc')
+		l_loc = tf.div(tf.reduce_mean(l_loc * weights), n_pos ,name = 'l_loc')
 
 		with tf.name_scope('total'):
 				# Add to EXTRA LOSSES TF.collection

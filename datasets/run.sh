@@ -15,29 +15,47 @@ CHECKPOINT_PATH=./logs_426/model.ckpt-48406
 CHECKPOINT_PATH=./checkpoints/vgg_16.ckpt
 CHECKPOINT_PATH=./checkpoints/model.ckpt-13889
 CHECKPOINT_PATH=./logs/momentum_0.001/model.ckpt-21218
+CHECKPOINT_PATH=./checkpoints/vgg_16.ckpt
 DATASET_DIR=./data/sythtext_mini/
-TRAIN_DIR=./logs/train/scratch
-TF_ENABLE_WINOGRAD_NONFUSED=1 CUDA_VISIBLE_DEVICES=0,1,2,3 setsid python Textbox_train.py \
+TRAIN_DIR=./logs/train/vgg_no_batch
+TF_ENABLE_WINOGRAD_NONFUSED=1 CUDA_VISIBLE_DEVICES=4,5,6,7 setsid python Textbox_train.py \
 	--train_dir=${TRAIN_DIR} \
 	--dataset_dir=${DATASET_DIR} \
 	--save_summaries_secs=60 \
 	--save_interval_secs=1800 \
+    --optimizer=momentum \
 	--weight_decay=0.0005 \
 	--learning_rate=0.004 \
 	--batch_size=32 \
-	--num_samples=800000 \
+	--num_samples=300000 \
 	--gpu_memory_fraction=0.95 \
-	--max_number_of_steps=250000 \
-    --use_batch=True \
+	--max_number_of_steps=150000 \
+    --use_batch=False \
 	--num_clones=4 \
-    --negative_ratio=1 \
-    --learning_rate_decay_factor=0.5
+    --negative_ratio=0.2 \
+    --checkpoint_path=${CHECKPOINT_PATH} \
+    --checkpoint_model_scope=vgg_16 \
+    --ignore_missing_vars=True \
+
     
 
 
 
-CHECKPOINT_PATH=./logs/train/logs609_train
-EVAL_DIR=./logs/eval/logs609_train
+CHECKPOINT_PATH=./logs/train/scratch_no_batch
+EVAL_DIR=./logs/eval/scratch_no_batch
+DATASET_DIR=./data/ICDAR2013/test
+CUDA_VISIBLE_DEVICES=5 setsid python eval.py \
+    --eval_dir=${EVAL_DIR} \
+    --dataset_dir=${DATASET_DIR} \
+    --checkpoint_path=${CHECKPOINT_PATH} \
+    --wait_for_checkpoints=True \
+    --batch_size=1 \
+    --use_batch=False \
+    --gpu_memory_fraction=0.02 \
+    --use_batch=False \
+
+CHECKPOINT_PATH=./logs/train/scratch
+EVAL_DIR=./logs/eval/scratch_train
 DATASET_DIR=./data/ICDAR2013/train
 CUDA_VISIBLE_DEVICES=1 setsid python eval.py \
     --eval_dir=${EVAL_DIR} \
@@ -45,9 +63,8 @@ CUDA_VISIBLE_DEVICES=1 setsid python eval.py \
     --checkpoint_path=${CHECKPOINT_PATH} \
     --wait_for_checkpoints=True \
     --batch_size=1 \
-    --use_batch=False \
-    --gpu_memory_fraction=0.02
-
+    --use_batch=True \
+    --gpu_memory_fraction=0.02 \
 
 
 ###########################################
