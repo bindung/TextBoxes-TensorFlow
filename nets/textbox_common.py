@@ -114,7 +114,7 @@ def tf_text_bboxes_encode_layer(bboxes,
 					c0 = tf.zeros_like(mask, tf.float32)
 					fmask = c0 + tf.sparse_tensor_to_dense(delta)
 
-					feat_scores = tf.where(tf.cast(fmask, tf.bool), 0.6*tf.ones_like(jaccard), feat_scores)
+					feat_scores = tf.where(tf.cast(fmask, tf.bool), 0.51*tf.ones_like(jaccard), feat_scores)
 					feat_ymin = fmask * bbox[0] + (1 - fmask) * feat_ymin
 					feat_xmin = fmask * bbox[1] + (1 - fmask) * feat_xmin
 					feat_ymax = fmask * bbox[2] + (1 - fmask) * feat_ymax
@@ -130,7 +130,7 @@ def tf_text_bboxes_encode_layer(bboxes,
 					
 					feat_scores, feat_ymin, feat_xmin, feat_ymax, feat_xmax	= \
 						tf.cond( tf.logical_and(tf.less(box_detect[i], 1),
-									tf.logical_and(tf.equal(tf.reduce_sum(imask), 0), tf.greater(max_jar, 0.1))), 
+									tf.logical_and(tf.equal(tf.reduce_sum(imask), 0), tf.greater(max_jar, 0.45))), 
 							  update0, 
 							  update1)
 					return feat_scores, feat_ymin, feat_xmin, feat_ymax, feat_xmax	

@@ -69,12 +69,12 @@ class TextboxNet(object):
 		anchor_ratios=[1.,2,3,5,7,10],
 		normalizations=[20, -1, -1, -1, -1, -1],
 		prior_scaling=[0.1, 0.1, 0.2, 0.2],
-		anchor_sizes=[(21., 45.),
-			  (45., 99.),
-			  (99., 153.),
-			  (153., 207.),
-			  (207., 261.),
-			  (261., 315.)],		
+		anchor_sizes=[(30., 60.),
+			  (60., 114.),
+			  (114., 168.),
+			  (168., 222.),
+			  (222., 276.),
+			  (276., 330.)],	
 		anchor_steps=[8, 16, 30, 60, 100, 300],
 		scales = [0.2 + i*0.8/5  for i in range(6)],
 		#scales = [0.05, 0.1,0.15,0.25,0.4,0.65],
@@ -316,10 +316,10 @@ def text_multibox_layer(layer,
 	  'fused':True,
 	}
 	net = inputs
-	'''
+	
 	if normalization > 0:
-		net = custom_layers.l2_normalization(net, scaling=True)
-	'''
+		net = custom_layers.l2_normalization(net, scaling=False)
+	
 	# Number of anchors.
 	num_box = 6
 	num_classes = 2
@@ -449,7 +449,7 @@ def text_losses(logits, localisations,
 		l_loc = tf.div(tf.reduce_sum(l_loc * weights), n_pos ,name = 'l_loc')
 		tf.losses.add_loss(l_loc)
 
-		
+
 		with tf.name_scope('total'):
 				# Add to EXTRA LOSSES TF.collection
 				tf.add_to_collection('EXTRA_LOSSES', n_pos)
