@@ -197,16 +197,17 @@ def main(_):
 				# Precison and recall values.
 				prec, rec = tfe.precision_recall(*tp_fp_metric[0][c])
 
-				op = tf.summary.scalar('precision', tf.reduce_max(prec), collections=[])
+				op = tf.summary.scalar('precision', prec, collections=[])
 				# op = tf.Print(op, [v], summary_name)
 				tf.add_to_collection(tf.GraphKeys.SUMMARIES, op)
 
-				op = tf.summary.scalar('recall', tf.reduce_max(rec), collections=[])
+				op = tf.summary.scalar('recall', rec, collections=[])
 				# op = tf.Print(op, [v], summary_name)
 				tf.add_to_collection(tf.GraphKeys.SUMMARIES, op)
 
 				# Average precision VOC07.
-				v = tfe.average_precision_voc07(prec, rec)				
+				#v = tfe.average_precision_voc07(prec, rec)				
+				v = (prec + rec)/2.
 				summary_name = 'ICDAR13/%s' % c
 				op = tf.summary.scalar(summary_name, v, collections=[])
 				# op = tf.Print(op, [v], summary_name)

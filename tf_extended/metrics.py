@@ -119,6 +119,7 @@ def precision_recall(num_gbboxes, num_detections, tp, fp, scores,
     with tf.name_scope(scope, 'precision_recall',
                        [num_gbboxes, num_detections, tp, fp, scores]):
         # Sort detections by score.
+        '''
         scores, idxes = tf.nn.top_k(scores, k=num_detections, sorted=True)
         tp = tf.gather(tp, idxes)
         fp = tf.gather(fp, idxes)
@@ -127,6 +128,9 @@ def precision_recall(num_gbboxes, num_detections, tp, fp, scores,
         fp = tf.cumsum(tf.cast(fp, dtype), axis=0)
         recall = _safe_div(tp, tf.cast(num_gbboxes, dtype), 'recall')
         precision = _safe_div(tp, tp + fp, 'precision')
+        '''
+        recall = tf.reduce_mean(tf.cast(fp,dtype), name='recall')
+        precision = tf.reduce_mean(tf.cast(tp,dtype), name='precision')
         return tf.tuple([precision, recall])
 
 
@@ -174,12 +178,23 @@ def streaming_tp_fp_arrays(num_gbboxes, tp, fp, scores,
             tp = tf.boolean_mask(tp, mask)
             fp = tf.boolean_mask(fp, mask)
 
+        ftype = tf.float32
+        tp = tf.cast(tp, ftype)
+        fp = tf.cast(fp, ftype)
+        num_ = tf.cast(num_gbboxes, ftype)
+        tp = tf.div(tf.reduce_sum(tp), tf.reduce_sum(tp) + tf.reduce_sum(fp))
+        fp = tf.div(tf.reduce_sum(tp), tf.reduce_sum(num_))
+
         # Local variables accumlating information over batches.
         v_nobjects = _create_local('v_num_gbboxes', shape=[], dtype=tf.int64)
         v_ndetections = _create_local('v_num_detections', shape=[], dtype=tf.int32)
         v_scores = _create_local('v_scores', shape=[0, ])
-        v_tp = _create_local('v_tp', shape=[0, ], dtype=stype)
-        v_fp = _create_local('v_fp', shape=[0, ], dtype=stype)
+
+        #v_tp = _create_local('v_tp', shape=[0, ], dtype=stype)
+        #v_fp = _create_local('v_fp', shape=[0, ], dtype=stype)
+        v_tp = _create_local('v_tp', shape=[], dtype=ftype)
+        v_fp = _create_local('v_fp', shape=[], dtype=ftype)
+
 
         # Update operations.
         nobjects_op = state_ops.assign_add(v_nobjects,
@@ -188,9 +203,9 @@ def streaming_tp_fp_arrays(num_gbboxes, tp, fp, scores,
                                               tf.size(scores, out_type=tf.int32))
         scores_op = state_ops.assign(v_scores, tf.concat([v_scores, scores], axis=0),
                                      validate_shape=False)
-        tp_op = state_ops.assign(v_tp, tf.concat([v_tp, tp], axis=0),
+        tp_op = state_ops.assign(v_tp, tf.stack([v_tp, tp], axis=0),
                                  validate_shape=False)
-        fp_op = state_ops.assign(v_fp, tf.concat([v_fp, fp], axis=0),
+        fp_op = state_ops.assign(v_fp, tf.stack([v_fp, fp], axis=0),
                                  validate_shape=False)
 
         # Value and update ops.
