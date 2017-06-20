@@ -132,7 +132,7 @@ def preprocess_for_train(image, labels, bboxes,
                     num_cases=4)
             '''
             image.set_shape([out_shape[0], out_shape[1], 3])
-            image = tf_image.tf_image_whitened(image, [_R_MEAN/255., _G_MEAN/255., _B_MEAN/255.])      
+            #image = tf_image.tf_image_whitened(image, [_R_MEAN/255., _G_MEAN/255., _B_MEAN/255.])      
             return image, labels, bboxes
 
         def update1(image=image, out_shape=out_shape,labels=labels,bboxes=bboxes):
@@ -162,7 +162,7 @@ def preprocess_for_train(image, labels, bboxes,
             '''
             image.set_shape([out_shape[0], out_shape[1], 3])
 
-            image = tf_image.tf_image_whitened(image, [_R_MEAN/255., _G_MEAN/255., _B_MEAN/255.])    
+            #image = tf_image.tf_image_whitened(image, [_R_MEAN/255., _G_MEAN/255., _B_MEAN/255.])    
             return image, labels, bboxes
 
         object_covered=tf.random_uniform([], minval=0, maxval=10, dtype=tf.int32, seed=None, name=None)
@@ -172,8 +172,10 @@ def preprocess_for_train(image, labels, bboxes,
         num = tf.reduce_sum(tf.cast(labels, tf.int32))
 
         tf_image.tf_summary_image(image, bboxes)
-        #image = tf.subtract(image, 0.5)
-        image = tf.multiply(image, 2.0)
+	image = image * 255.
+	image = tf.clip_by_value(image, 0.0, 255.)
+        image = tf.subtract(image, 128.)
+        #image = tf.multiply(image, 2.0)
 
         if data_format=='NHWC':
             image = image
@@ -253,10 +255,11 @@ def preprocess_for_eval(image, labels, bboxes,
             labels = tf.boolean_mask(labels, mask)
             bboxes = tf.boolean_mask(bboxes, mask)
 
-        image = tf_image.tf_image_whitened(image, [_R_MEAN, _G_MEAN, _B_MEAN])
-        image = image/255.
-        #image = tf.subtract(image, 0.5)
-        image = tf.multiply(image, 2.0)
+        #image = tf_image.tf_image_whitened(image, [_R_MEAN, _G_MEAN, _B_MEAN])
+        #image = image/255.
+	image = tf.clip_by_value(image, 0., 255.)
+        image = tf.subtract(image, 128.)
+        #image = tf.multiply(image, 2.0)
 
         if data_format=='NHWC':
             image = image

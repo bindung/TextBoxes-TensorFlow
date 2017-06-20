@@ -182,9 +182,10 @@ def streaming_tp_fp_arrays(num_gbboxes, tp, fp, scores,
         tp = tf.cast(tp, ftype)
         fp = tf.cast(fp, ftype)
         num_ = tf.cast(num_gbboxes, ftype)
-        tp = tf.div(tf.reduce_sum(tp), tf.reduce_sum(tp) + tf.reduce_sum(fp))
-        fp = tf.div(tf.reduce_sum(tp), tf.reduce_sum(num_))
-
+        tp = tf.div(tf.reduce_sum(tp), tf.reduce_sum(tp) + tf.reduce_sum(fp)+ 0.0001)
+        fp = tf.div(tf.reduce_sum(tp), tf.reduce_sum(num_)+0.0001)
+	tp = tf.maximum(tp, 0.001)
+        fp = tf.maximum(fp, 0.001)
         # Local variables accumlating information over batches.
         v_nobjects = _create_local('v_num_gbboxes', shape=[], dtype=tf.int64)
         v_ndetections = _create_local('v_num_detections', shape=[], dtype=tf.int32)
@@ -192,8 +193,8 @@ def streaming_tp_fp_arrays(num_gbboxes, tp, fp, scores,
 
         #v_tp = _create_local('v_tp', shape=[0, ], dtype=stype)
         #v_fp = _create_local('v_fp', shape=[0, ], dtype=stype)
-        v_tp = _create_local('v_tp', shape=[], dtype=ftype)
-        v_fp = _create_local('v_fp', shape=[], dtype=ftype)
+        v_tp = _create_local('v_tp', shape=[0,], dtype=ftype)
+        v_fp = _create_local('v_fp', shape=[0,], dtype=ftype)
 
 
         # Update operations.
@@ -203,9 +204,9 @@ def streaming_tp_fp_arrays(num_gbboxes, tp, fp, scores,
                                               tf.size(scores, out_type=tf.int32))
         scores_op = state_ops.assign(v_scores, tf.concat([v_scores, scores], axis=0),
                                      validate_shape=False)
-        tp_op = state_ops.assign(v_tp, tf.stack([v_tp, tp], axis=0),
+        tp_op = state_ops.assign(v_tp, tf.concat([v_tp, [tp]], axis=0),
                                  validate_shape=False)
-        fp_op = state_ops.assign(v_fp, tf.stack([v_fp, fp], axis=0),
+        fp_op = state_ops.assign(v_fp, tf.concat([v_fp, [fp]], axis=0),
                                  validate_shape=False)
 
         # Value and update ops.

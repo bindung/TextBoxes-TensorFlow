@@ -106,7 +106,7 @@ def l2_normalization(
 						if data_format == 'NHWC':
 								outputs = tf.multiply(outputs, scale)
 						elif data_format == 'NCHW':
-								scale = tf.expand_dims(scale, axis=-1)
+								scale = tf.expand_dims(scale*20., axis=-1)
 								scale = tf.expand_dims(scale, axis=-1)
 								outputs = tf.multiply(outputs, scale)
 								# outputs = tf.transpose(outputs, perm=(0, 2, 3, 1))

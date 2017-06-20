@@ -137,7 +137,7 @@ def tf_text_bboxes_encode_layer(bboxes,
 
 
 				feat_scores,feat_ymin, feat_xmin, feat_ymax, feat_xmax = \
-						tf.cond(tf.less(idx,2),update_all, update1)
+						tf.cond(tf.less(idx,0),update_all, update1)
 
 
 				box_mask = tf.cast(tf.equal(tf.range(num), i), tf.int32)

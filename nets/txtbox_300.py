@@ -318,7 +318,7 @@ def text_multibox_layer(layer,
 	net = inputs
 	
 	if normalization > 0:
-		net = custom_layers.l2_normalization(net, scaling=False)
+		net = custom_layers.l2_normalization(net, scaling=True)
 	
 	# Number of anchors.
 	num_box = 6
@@ -426,7 +426,7 @@ def text_losses(logits, localisations,
 		loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=alllogits,labels=ipmask)
 		#l_cross_pos = tf.losses.compute_weighted_loss(loss, fpmask)
 		l_cross_pos = tf.div(tf.reduce_sum(loss * fpmask), n_pos ,name = 'l_cross_pos')
-		tf.losses.add_loss(l_cross_pos)
+		#tf.losses.add_loss(l_cross_pos)
 
 		loss_neg = tf.where(pmask,
 						   tf.cast(tf.zeros_like(ipmask),tf.float32),
@@ -441,7 +441,10 @@ def text_losses(logits, localisations,
 		fnmask = tf.cast(nmask, tf.float32)
 		#l_cross_neg = tf.losses.compute_weighted_loss(loss, fnmask)
 		l_cross_neg = tf.div(tf.reduce_sum(loss * fnmask), n_neg ,name = 'l_cross_neg')
-		tf.losses.add_loss(l_cross_neg)
+		#tf.losses.add_loss(l_cross_neg)
+		all_mask =tf.cast(tf.logical_or(nmask, pmask), tf.float32)
+		l_cross = tf.div(tf.reduce_sum(loss * all_mask), n_pos, name = 'l_cross')
+		tf.losses.add_loss(l_cross)
 
 		weights = tf.expand_dims(fpmask, axis=-1)
 		l_loc = custom_layers.abs_smooth(alllocalization - glocalisations)

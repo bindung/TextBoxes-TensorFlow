@@ -88,30 +88,30 @@ def run():
 	wordBB = labels[wordname]
 	charBB = labels[charname]
 	coder = ImageCoder()
-	for i in range(NUMoffolder):
+ 	for i in range(20):
 		tf_filename = str(i+1) + '.tfrecord'
-		tfrecord_writer = tf.python_io.TFRecordWriter(tf_filename)
-		dir = i+1
-		pattern = re.compile(r'^{}\/'.format(dir))
-		print dir
-		print pattern
-		res =[k for k in range(imnames.shape[1]) if pattern.match(imnames[0,k][0]) != None ]
-		print "The size of %s folder : %s" % (dir,len(res))
-		# shuffle
-		res = np.random.permutation(res)
-		for j in res:
-			wordbb = wordBB[0,j]
-			imname = imnames[0,j][0]
-			#print str(i) + imname
-			image_data, shape, bbox, label ,imname= _processing_image(wordbb, imname,coder)
-
-			example = _convert_to_example(image_data, shape, bbox, label, imname)
-			tfrecord_writer.write(example.SerializeToString())  
-	print 'Transform to tfrecord finished'
-
+		tfrecord_writer = tf.python_io.TFRecordWriter('../sythtext_mini/' + tf_filename)
+		for l in range(i*10 + 1, i*10 + 11):
+			dir = l
+			pattern = re.compile(r'^{}\/'.format(dir))
+			print dir
+			print pattern
+			res =[k for k in range(imnames.shape[1]) if pattern.match(imnames[0,k][0]) != None ]
+			print "The size of %s folder : %s" % (dir,len(res))
+			# shuffle
+			res = np.random.permutation(res)
+			res = res[:int(res.shape[0]*0.1)]
+			for j in res:
+				wordbb = wordBB[0,j]
+				imname = imnames[0,j][0]
+				#print str(i) + imname
+				image_data, shape, bbox, label ,imname= _processing_image(wordbb, imname,coder)
+	
+				example = _convert_to_example(image_data, shape, bbox, label, imname)
+				tfrecord_writer.write(example.SerializeToString()) 
+	print 'Transform to tfrecord finished'	
 if __name__ == '__main__':
 	run()
-
 
 
 

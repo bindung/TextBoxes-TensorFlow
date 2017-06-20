@@ -12,6 +12,7 @@ from deployment import model_deploy
 import load_batch
 from nets import txtbox_300
 from nets import nets_factory
+import pickle
 
 slim = tf.contrib.slim
 # =========================================================================== #
@@ -322,10 +323,11 @@ def main(_):
 															 global_step)
 			optimizer = tf_utils.configure_optimizer(FLAGS, learning_rate)
 			summaries.add(tf.summary.scalar('learning_rate', learning_rate))
-			if FLAGS.fine_tune:
-                gradient_multipliers = pickle.load(open('nets/multiplier_300.pkl','rb'))
-            else:
-                gradient_multipliers = None
+		
+		if FLAGS.fine_tune:
+               		gradient_multipliers = pickle.load(open('nets/multiplier_300.pkl','rb'))
+		else:
+                	gradient_multipliers = None
             
 
 		if FLAGS.moving_average_decay:
@@ -349,10 +351,10 @@ def main(_):
 		update_ops.append(grad_updates)
 
 		update_op = tf.group(*update_ops)
-		#train_tensor = control_flow_ops.with_dependencies([update_op], total_loss,
-		#												  name='train_op')
+		train_tensor = control_flow_ops.with_dependencies([update_op], total_loss,
+														  name='train_op')
 
-		train_tensor = slim.learning.create_train_op(total_loss, optimizer, gradient_multipliers=gradient_multipliers)
+		#train_tensor = slim.learning.create_train_op(total_loss, optimizer, gradient_multipliers=gradient_multipliers)
 		# Add the summaries from the first clone. These contain the summaries
 		# created by model_fn and either optimize_clones() or _gather_clone_loss().
 		summaries |= set(tf.get_collection(tf.GraphKeys.SUMMARIES,
