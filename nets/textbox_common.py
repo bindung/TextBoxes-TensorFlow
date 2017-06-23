@@ -230,31 +230,33 @@ def textbox_anchor_one_layer(img_shape,
 		# Follow the papers scheme
 		# 12 ahchor boxes with out sk' = sqrt(sk * sk+1)
 		y, x = np.mgrid[0:feat_size[0], 0:feat_size[1]]
+
 		y = (y.astype(dtype) + offset) / feat_size[0] 
 		x = (x.astype(dtype) + offset) / feat_size[1]
-		y_offset = y + offset
+		y_offset = y + offset/feat_size[0]
 		x_offset = x
 		x_out = np.stack((x, x_offset), -1)
 		y_out = np.stack((y, y_offset), -1)
 		y_out = np.expand_dims(y_out, axis=-1)
 		x_out = np.expand_dims(x_out, axis=-1)
 
-		# 
-		num_anchors = 6
 
+		numofanchor = len(ratios) + 1
+		h = np.zeros((numofanchor, ), dtype=dtype)
+		w = np.zeros((numofanchor, ), dtype=dtype)
 
-		h = np.zeros((len(ratios), ), dtype=dtype)
-		w = np.zeros((len(ratios), ), dtype=dtype)
-		di = 0
-		if len(sizes) > 1:
-				h[0] = math.sqrt(sizes[0] * sizes[1]) / img_shape[0]
-				w[0] = math.sqrt(sizes[0] * sizes[1]) / img_shape[1]
-				di += 1
-		di = 0
 		for i, r in enumerate(ratios):
-				h[i+di] = sizes[0] / img_shape[0] / math.sqrt(r)
-				w[i+di] = sizes[0] / img_shape[1] * math.sqrt(r)
-		return y_out, x_out, h, w
+				h[i] = sizes[0] / img_shape[0] / math.sqrt(r)
+				w[i] = sizes[0] / img_shape[1] * math.sqrt(r)
+		h[i] = sizes[0] / img_shape[0] / 3.
+		w[i] = sizes[0] / img_shape[1] * 1.6
+		if feat_size[0] != 38:
+			h[i+1] = np.array(math.sqrt(sizes[0] * sizes[1] )/ img_shape[0], dtype = dtype)
+			w[i+1] = np.array(math.sqrt(sizes[0] * sizes[1] )/ img_shape[0], dtype = dtype)
+		else:
+			h[i+1] = sizes[0] / img_shape[0] / 4.
+			w[i+1] = sizes[0] / img_shape[1] / 2.
+ 		return y_out, x_out, h, w
 
 
 

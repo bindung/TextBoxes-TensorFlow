@@ -29,20 +29,20 @@ def get_batch(dataset_dir,
 	provider = slim.dataset_data_provider.DatasetDataProvider(
 				dataset,
 				num_readers=num_readers,
-				common_queue_capacity=1024 * 16 + 20 * batch_size,
-				common_queue_min=1024 * 16,
+				common_queue_capacity=512 * 16 + 20 * batch_size,
+				common_queue_min=512 * 16,
 				shuffle=shuffe)
 	
-	[image, shape, glabels, gbboxes] = provider.get(['image', 'shape',
+	[image, shape, glabels, gbboxes,height,width] = provider.get(['image', 'shape',
 											 'object/label',
-											 'object/bbox'])
+											 'object/bbox','height','width'])
 
 
 
 	if is_training:
 		image, glabels, gbboxes,num = \
-		txt_preprocessing.preprocess_image(image,  glabels,gbboxes, 
-										out_shape,use_whiten=FLAGS.use_whiten,is_training=is_training)
+		txt_preprocessing.preprocess_image(image,  glabels, gbboxes, height, width,
+											out_shape,use_whiten=FLAGS.use_whiten,is_training=is_training)
 
 		glocalisations, gscores = \
 			net.bboxes_encode( gbboxes, anchors, num)
@@ -66,7 +66,7 @@ def get_batch(dataset_dir,
 
 	else:
 		image, glabels, gbboxes,bbox_img, num = \
-		txt_preprocessing.preprocess_image(image,  glabels,gbboxes, 
+		txt_preprocessing.preprocess_image(image,  glabels,gbboxes, height,width,
 										out_shape,use_whiten=FLAGS.use_whiten,is_training=is_training)
 
 		glocalisations, gscores = \

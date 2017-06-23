@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="RemoteMappingsManager">
+    <list>
+      <list>
+        <remote-mappings server-id="python@ssh://mmvc@nyu-mmvc-008.poly.edu:22/home/daitao/anaconda2/envs/tf1.2/bin/python2.7">
+          <settings>
+            <list>
+              <mapping local-root="$PROJECT_DIR$" remote-root="/media/MMVCNYLOCAL/MMVC_NY/Daitao_Xing/TextBoxes-TensorFlow" />
+            </list>
+          </settings>
+        </remote-mappings>
+      </list>
+    </list>
+  </component>
+</project>

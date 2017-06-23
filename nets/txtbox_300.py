@@ -66,7 +66,7 @@ class TextboxNet(object):
 		feat_layers=['conv4', 'conv7', 'conv8', 'conv9', 'conv10', 'global'],
 		feat_shapes=[(38, 38), (19, 19), (10, 10), (5, 5), (3, 3), (1, 1)],
 		scale_range=[0.2, 0.95],
-		anchor_ratios=[1.,2,3,5,7,10],
+		anchor_ratios=[1,2,3,5,7,10],
 		normalizations=[20, -1, -1, -1, -1, -1],
 		prior_scaling=[0.1, 0.1, 0.2, 0.2],
 		anchor_sizes=[(30., 60.),
@@ -321,7 +321,7 @@ def text_multibox_layer(layer,
 		net = custom_layers.l2_normalization(net, scaling=True)
 	
 	# Number of anchors.
-	num_box = 6
+	num_box = 7
 	num_classes = 2
 	# Location.
 	num_loc_pred = 2*num_box * 4

@@ -34,15 +34,277 @@ from tensorflow.python.ops import string_ops
 from tensorflow.python.ops import math_ops
 from tensorflow.python.ops import random_ops
 from tensorflow.python.ops import variables
-
+import tf_extended as tfe
 
 
 _R_MEAN = 123.
 _G_MEAN = 117.
 _B_MEAN = 104.
+
+# Some training pre-processing parameters.
+BBOX_CROP_OVERLAP = 0.1      # Minimum overlap to keep a bbox after cropping.
+CROP_RATIO_RANGE = (0.7, 1.3)  # Distortion ratio during cropping.
+EVAL_SIZE = (300, 300)
 # =========================================================================== #
 # Modification of TensorFlow image routines.
 # =========================================================================== #
+def Random_Brightness(image, max_delta = 32.):
+    """ Random_brightness function 
+    With probably of 0.5, return the original image, otherwide, random brightness according 
+    the max_delta value.
+    Args:
+        image: an image must be in range(0,1)
+        max_delta: arg in tf.image_random_Brightness
+    Returns:
+        image: 
+    """
+    choice = tf.random_uniform([], minval=0, maxval=2, dtype=tf.int32)
+    image = tf.cond(tf.equal(choice,tf.constant(1)),
+                    lambda : image, 
+                    lambda : tf.image.random_brightness(image, max_delta=max_delta / 255.))
+    return image
+
+def Random_Contrast(image, lower=0.5, upper=1.5):
+    """ Random_Contrast function 
+    With probably of 0.5, return the original image, otherwide, random contrast according 
+    the upper and lower value.
+    Args:
+        image: an image must be in range(0,1)
+        lower & upper : paras in tf.image.random_contrast
+    Returns:
+        image: 
+    """
+    choice = tf.random_uniform([], minval=0, maxval=2, dtype=tf.int32)
+    image = tf.cond(tf.equal(choice,tf.constant(1)),
+                    lambda : image, 
+                    lambda : tf.image.random_contrast(image, lower=lower, upper=upper))
+    return image
+
+def Random_Hue(image, max_delta=0.2):
+    """ Random_Hue function
+    With probably of 0.5, return the original image, otherwide, random Hue according
+    the max_delta value.
+    Args:
+        image: an image must be in range(0,1)
+        lower & upper : paras in tf.image.random_hue
+    Returns:
+        image:
+    """
+    choice = tf.random_uniform([], minval=0, maxval=2, dtype=tf.int32)
+    image = tf.cond(tf.equal(choice,tf.constant(1)),
+                    lambda : image,
+                    lambda : tf.image.random_hue(image, max_delta=max_delta))
+    return image
+
+def Random_Saturation(image, lower=0.5, upper=1.5):
+    """ Random_Hue function
+    With probably of 0.5, return the original image, otherwide, random Hue according
+    the lower upper value.
+    Args:
+        image: an image must be in range(0,1)
+        lower & upper : paras in tf.image.random_saturation
+    Returns:
+        image:
+    """
+    choice = tf.random_uniform([], minval=0, maxval=2, dtype=tf.int32)
+    image = tf.cond(tf.equal(choice,tf.constant(1)),
+                    lambda : image,
+                    lambda : tf.image.random_saturation(image, lower=lower, upper=upper))
+    return image
+
+def Convert2HSV(image):
+    """ Convert2HSV
+    Convert image format from RGB to HSV
+    :param image: HSV format
+    :return: image : HSV format
+    """
+    return tf.image.rgb_to_hsv(image)
+
+def Convert2RGB(image):
+    """ Convert2RGB
+    Convert image format from HSV to RGB
+    :param image:
+    :return: image: RGB format
+    """
+    return tf.image.hsv_to_rgb(image)
+
+def Random_light_noise(image):
+    """ Random_light_noise
+    Shuffle the channels of images
+    :param image: with RGB or HSV
+    :return: image: shuffled channels
+    """
+    def f1():
+        image_tensor = tf.transpose(image, perm=[2, 0, 1])
+        image_tensor = tf.random_shuffle(image_tensor)
+        return tf.transpose(image_tensor, perm=[1, 2, 0])
+
+    choice = tf.random_uniform([], minval=0, maxval=2, dtype=tf.int32)
+    image = tf.cond(tf.greater(choice,tf.constant(0)),
+                    lambda : image,
+                    f1)
+    return image
+
+def resize_image_bboxes_with_crop_or_pad2(image, bboxes,height, width):
+    """resize_image_bboxes_with_crop_or_pad2
+    Random resize image into a large image, ratio is choosen from [1,2,]
+    :param image:
+    :param bboxes:
+    :return: images:
+             bboxes:
+    """
+    height = tf.cast(height, tf.int32)
+    width  = tf.cast(width , tf.int32)
+    ratio= tf.random_uniform([], minval=-1, maxval=3, dtype=tf.int32)
+    def f1():
+        return image, bboxes
+
+    def f2():
+        offset_height = tf.random_uniform([], minval=0, maxval=ratio*height - height, dtype=tf.int32)
+        offset_width  = tf.random_uniform([], minval=0, maxval=ratio*width - width, dtype=tf.int32)
+        target_height = height * ratio
+        target_width  = width * ratio
+        image_tensor = tf.image.pad_to_bounding_box(image,
+                                    offset_height,
+                                    offset_width,
+                                    target_height,
+                                    target_width)
+        bboxes_pad = bboxes_crop_or_pad(bboxes, height, width,
+                                    offset_height, offset_width,
+                                    target_height, target_width)
+        return image_tensor, bboxes_pad
+
+    image, bboxes = tf.cond(tf.greater(ratio,tf.constant(1)),
+                            f2,
+                            f1)
+    return image, bboxes
+
+
+
+
+
+
+def distorted_bounding_box_crop(image,
+                                labels,
+                                bboxes,
+                                min_object_covered=0.1,
+                                aspect_ratio_range=(0.3, 2.0),
+                                area_range=(0.1, 1.0),
+                                max_attempts=200,
+                                scope=None):
+    """Generates cropped_image using a one of the bboxes randomly distorted.
+    Args:
+        image: A `Tensor` representing an image of arbitrary size.
+        labels : A Tensor inlcudes all labels
+        bboxes : A Tensor inlcudes cordinates of bbox in shape [N, 4]
+        min_object_covered: An optional `float`. Defaults to `0.1`. The cropped
+            area of the image must contain at least this fraction of any bounding box
+            supplied.
+        aspect_ratio_range: An optional list of `floats`. The cropped area of the
+            image must have an aspect ratio = width / height within this range.
+        area_range: An optional list of `floats`. The cropped area of the image
+            must contain a fraction of the supplied image within in this range.
+        max_attempts: An optional `int`. Number of attempts at generating a cropped
+            region of the image of the specified constraints. After `max_attempts`
+            failures, return the entire image.
+        scope: Optional scope for name_scope.
+    Returns:
+        A tuple, a 3-D Tensor cropped_image and the distorted bbox
+    """
+    with tf.name_scope(scope, 'distorted_bounding_box_crop', [image,labels,bboxes]):
+        # Each bounding box has shape [1, num_boxes, box coords] and
+        # the coordinates are ordered [ymin, xmin, ymax, xmax].
+        bbox_begin, bbox_size, distort_bbox = tf.image.sample_distorted_bounding_box(
+                tf.shape(image),
+                bounding_boxes=tf.expand_dims(bboxes, 0),
+                min_object_covered=min_object_covered,
+                aspect_ratio_range=CROP_RATIO_RANGE,
+                area_range=area_range,
+                max_attempts=max_attempts,
+                use_image_if_no_bounding_boxes=False)
+        distort_bbox = distort_bbox[0, 0]
+
+        # Crop the image to the specified bounding box.
+        cropped_image = tf.slice(image, bbox_begin, bbox_size)
+
+        # Update bounding boxes: resize and filter out.
+        bboxes = tfe.bboxes_resize(distort_bbox, bboxes)
+        labels, bboxes, num = tfe.bboxes_filter_overlap(labels, bboxes,
+                                                   BBOX_CROP_OVERLAP)
+        return cropped_image, labels, bboxes,num
+
+
+def distorter(images):
+    """ distorter
+    Integrate all distort functions in a pipeline
+    :param image:
+    :return: image with distortion
+    """
+    def f1():
+        image = Random_Brightness(images)
+        image = Random_Contrast(image)
+        image = Convert2HSV(image)
+        image = Random_Saturation(image)
+        image = Random_Hue(image)
+        image = Convert2RGB(image)
+        return  image
+
+    def f2():
+        image = Random_Brightness(images)
+        image = Convert2HSV(image)
+        image = Random_Saturation(image)
+        image = Random_Hue(image)
+        image = Convert2RGB(image)
+        image = Random_Contrast(image)
+        return  image
+
+    choice = tf.random_uniform([], minval=0, maxval=2, dtype=tf.int32)
+    image = tf.cond(tf.equal(choice,tf.constant(1)),
+                    f1,
+                    f2)
+    image = Random_light_noise(image)
+    return image
+
+
+def Random_crop(image, labels,bboxes):
+    """ Random crop
+    With the probablity of 1/6 , it will return the original pic.
+    Or it will random crop. The crop ratio is randomly choosen from np.linspace(0,1.,21_
+    :param image:
+    :param out_shape:
+    :param labels:
+    :param bboxes:
+    :return: image:
+             labels:
+             bboxes:
+    """
+
+    def f1():
+        return image, labels, bboxes
+
+    def f2(image=image, labels=labels,bboxes=bboxes):
+        num = tf.constant(1)
+
+        def random_distorted_bounding_box_crop(vals, index):
+            object_covered = np.linspace(0, 1., 21)
+            image, labels, bboxes, num = vals
+            return distorted_bounding_box_crop(image, labels, bboxes,
+                                               min_object_covered=object_covered[index])
+
+        vals = \
+             _apply_with_random_selector_tuples((image, labels, bboxes, num),
+                                                        random_distorted_bounding_box_crop,
+                                                        num_cases=21)
+        image, labels, bboxes, num = vals
+
+        return image, labels, bboxes
+
+    object_covered = tf.random_uniform([], minval=0, maxval=6, dtype=tf.int32, seed=None, name=None)
+    image_tensor, labels, bboxes = tf.cond(tf.greater(object_covered, tf.constant(4)), f1, f2)
+    return image_tensor, labels, bboxes
+
+
+
 def _assert(cond, ex_type, msg):
     """A polymorphic assert, works with tensors and boolean expressions.
     If `cond` is not a tensor, behave like an ordinary assert statement, except

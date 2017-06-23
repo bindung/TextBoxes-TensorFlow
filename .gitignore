@@ -7,7 +7,10 @@ ehthumbs.db
 rawdata
 Thumbs.db
 .csv
+.idea/
 data
+Notes
+.idea/*
 # Directories.
 datasets/__pycache__/
 deployment/__pycache__/

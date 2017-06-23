@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="7a433cf9-cc61-4837-954f-fcc0b8a5c447" name="Textboxes" url="http://nyu-mmvc-008.poly.edu">
+        <fileTransfer host="nyu-mmvc-008.poly.edu" port="22" rootFolder="/media/MMVCNYLOCAL/MMVC_NY/Daitao_Xing/TextBoxes-TensorFlow" accessType="SFTP">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" />
+          </advancedOptions>
+          <option name="port" value="22" />
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>

@@ -14,8 +14,16 @@ from datasets.dataset_utils import int64_feature, float_feature, bytes_feature ,
 
 from PIL import Image
 
-data_path = '../data/sythtext/'
-os.chdir(data_path)
+tf.app.flags.DEFINE_string(
+ 'datasets', '../data/sythtext/',
+ 'Directory of the datasets')
+
+tf.app.flags.DEFINE_string(
+ 'path_save', '../data/sythtext/',
+ 'Dictionary to save sythtext record')
+
+FLAGS = tf.app.flags.FLAGS
+
 cellname = 'gt'
 textname = 'txt'
 imcell = 'imnames'
@@ -25,7 +33,6 @@ NUMoffolder = 200
 
 ## SythText datasets is too big to store in a record. 
 ## So Transform tfrecord according to dir name
-
 
 def _convert_to_example(image_data, shape, bbox, label,imname):
 	nbbox = np.array(bbox)
@@ -54,7 +61,7 @@ def _convert_to_example(image_data, shape, bbox, label,imname):
 
 def _processing_image(wordbb, imname,coder):
 	#wordbb = tf.cast(wordbb, tf.float32)
-	image_data = tf.gfile.GFile(imname, 'r').read()
+	image_data = tf.gfile.GFile(FLAGS.datasets + imname, 'r').read()
 	image = coder.decode_jpeg(image_data)
 	#image_data = np.array(Image.open(imname))
 	shape = image.shape
@@ -65,10 +72,10 @@ def _processing_image(wordbb, imname,coder):
 	bbox = []
 	[xmin, ymin]= np.min(wordbb,1)
 	[xmax, ymax] = np.max(wordbb,1)
-	xmin = np.maximum(xmin/shape[1], 0.0)
-	ymin = np.maximum(ymin/shape[0], 0.0)
-	xmax = np.minimum(xmax/shape[1], 1.0)
-	ymax = np.minimum(ymax/shape[0], 1.0)
+	xmin = np.maximum(xmin*1./shape[1], 0.0)
+	ymin = np.maximum(ymin*1./shape[0], 0.0)
+	xmax = np.minimum(xmax*1./shape[1], 1.0)
+	ymax = np.minimum(ymax*1./shape[0], 1.0)
 	if numofbox > 1:
 		bbox = [[ymin[i],xmin[i],ymax[i],xmax[i]] for i in range(numofbox)] 
 	if numofbox == 1:
@@ -81,34 +88,33 @@ def _processing_image(wordbb, imname,coder):
 
 
 def run():
-	labels = sio.loadmat('gt.mat')
+	labels = sio.loadmat(FLAGS.datasets + 'gt.mat')
 	print labels.keys()
 	texts = labels[textname]
 	imnames = labels[imcell]
 	wordBB = labels[wordname]
 	charBB = labels[charname]
 	coder = ImageCoder()
- 	for i in range(20):
+ 	for i in range(NUMoffolder):
 		tf_filename = str(i+1) + '.tfrecord'
-		tfrecord_writer = tf.python_io.TFRecordWriter('../sythtext_mini/' + tf_filename)
-		for l in range(i*10 + 1, i*10 + 11):
-			dir = l
-			pattern = re.compile(r'^{}\/'.format(dir))
-			print dir
-			print pattern
-			res =[k for k in range(imnames.shape[1]) if pattern.match(imnames[0,k][0]) != None ]
-			print "The size of %s folder : %s" % (dir,len(res))
-			# shuffle
-			res = np.random.permutation(res)
-			res = res[:int(res.shape[0]*0.1)]
-			for j in res:
-				wordbb = wordBB[0,j]
-				imname = imnames[0,j][0]
-				#print str(i) + imname
-				image_data, shape, bbox, label ,imname= _processing_image(wordbb, imname,coder)
-	
-				example = _convert_to_example(image_data, shape, bbox, label, imname)
-				tfrecord_writer.write(example.SerializeToString()) 
+		tfrecord_writer = tf.python_io.TFRecordWriter(FLAGS.path_save + tf_filename)
+		dir = i+1
+		pattern = re.compile(r'^{}\/'.format(dir))
+		print dir
+		#print pattern
+		res =[k for k in range(imnames.shape[1]) if pattern.match(imnames[0,k][0]) != None ]
+		print "The size of %s folder : %s" % (dir,len(res))
+		# shuffle
+		#res = np.random.permutation(res)
+		#res = res[:int(res.shape[0]*0.1)]
+		for j in res:
+			wordbb = wordBB[0,j]
+			imname = imnames[0,j][0]
+			#print str(i) + imname
+			image_data, shape, bbox, label ,imname= _processing_image(wordbb, imname,coder)
+
+			example = _convert_to_example(image_data, shape, bbox, label, imname)
+			tfrecord_writer.write(example.SerializeToString()) 
 	print 'Transform to tfrecord finished'	
 if __name__ == '__main__':
 	run()

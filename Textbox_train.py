@@ -14,6 +14,7 @@ from nets import txtbox_300
 from nets import nets_factory
 import pickle
 
+from tensorflow.python.framework import ops
 slim = tf.contrib.slim
 # =========================================================================== #
 # Text Network flags.
@@ -21,7 +22,7 @@ slim = tf.contrib.slim
 tf.app.flags.DEFINE_float(
 	'loss_alpha', 1., 'Alpha parameter in the loss function.')
 tf.app.flags.DEFINE_float(
-	'negative_ratio', 1., 'Negative ratio in the loss function.')
+	'negative_ratio', 3., 'Negative ratio in the loss function.')
 tf.app.flags.DEFINE_float(
 	'match_threshold', 0.5, 'Matching threshold in the loss function.')
 tf.app.flags.DEFINE_string(
@@ -47,10 +48,10 @@ tf.app.flags.DEFINE_integer(
 	'The number of parameter servers. If the value is 0, then the parameters '
 	'are handled locally by the worker.')
 tf.app.flags.DEFINE_integer(
-	'num_readers', 1,
+	'num_readers', 4,
 	'The number of parallel readers that read data from the dataset.')
 tf.app.flags.DEFINE_integer(
-	'num_preprocessing_threads', 2,
+	'num_preprocessing_threads', 8,
 	'The number of threads used to create the batches.')
 tf.app.flags.DEFINE_integer(
 	'log_every_n_steps', 10,
@@ -136,7 +137,9 @@ tf.app.flags.DEFINE_boolean(
 tf.app.flags.DEFINE_boolean(
 	'use_whiten', True,
 	'Wheather use whiten or not,genally you can choose whiten or batchnorm tech.')
-
+tf.app.flags.DEFINE_float('clip_gradient_norm', 2.0,
+                   'If greater than 0 then the gradients would be clipped by '
+                   'it.')
 # =========================================================================== #
 # Dataset Flags.
 # =========================================================================== #
@@ -291,18 +294,18 @@ def main(_):
 		update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS, first_clone_scope)
 
 		
-		end_points = clones[0].outputs
-		for end_point in end_points:
-			x = end_points[end_point]
-			summaries.add(tf.summary.histogram('activations/' + end_point, x))
+		#end_points = clones[0].outputs
+		#for end_point in end_points:
+		#	x = end_points[end_point]
+		#	summaries.add(tf.summary.histogram('activations/' + end_point, x))
 
 
 		for loss in tf.get_collection('EXTRA_LOSSES',first_clone_scope):
 			summaries.add(tf.summary.scalar(loss.op.name, loss))
 
-		
-		for variable in slim.get_model_variables():
-			summaries.add(tf.summary.histogram(variable.op.name, variable))
+		#
+		#for variable in slim.get_model_variables():
+		#	summaries.add(tf.summary.histogram(variable.op.name, variable))
 		
 		#################################
 		# Configure the moving averages #
@@ -325,9 +328,9 @@ def main(_):
 			summaries.add(tf.summary.scalar('learning_rate', learning_rate))
 		
 		if FLAGS.fine_tune:
-               		gradient_multipliers = pickle.load(open('nets/multiplier_300.pkl','rb'))
+			gradient_multipliers = pickle.load(open('nets/multiplier_300.pkl','rb'))
 		else:
-                	gradient_multipliers = None
+			gradient_multipliers = None
             
 
 		if FLAGS.moving_average_decay:
@@ -344,7 +347,13 @@ def main(_):
 			var_list=variables_to_train)
 		# Add total_loss to summary.
 		summaries.add(tf.summary.scalar('total_loss', total_loss))
+		if gradient_multipliers:
+			with ops.name_scope('multiply_grads'):
+				clones_gradients = slim.learning.multiply_gradients(clones_gradients, gradient_multipliers)
 
+		if FLAGS.clip_gradient_norm > 0:
+			with ops.name_scope('clip_grads'):
+				clones_gradients = slim.learning.clip_gradient_norms(clones_gradients, FLAGS.clip_gradient_norm)
 		# Create gradient updates.
 		grad_updates = optimizer.apply_gradients(clones_gradients,
 												 global_step=global_step)
