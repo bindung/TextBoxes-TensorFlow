@@ -16,6 +16,7 @@
             <excludedPath path="/logs" />
             <excludedPath path="*.pyc" />
             <excludedPath path="/Notes/.ipynb_checkpoints" />
+            <excludedPath local="true" path="$PROJECT_DIR$/Notes" />
           </excludedPaths>
         </serverdata>
       </paths>

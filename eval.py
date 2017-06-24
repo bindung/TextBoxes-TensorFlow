@@ -1,19 +1,13 @@
 import math
-import sys
-import six
 import time
 
 import numpy as np
 import tensorflow as tf
 import tf_extended as tfe
-import tf_utils
-from tensorflow.python.framework import ops
-from tensorflow.python.ops import control_flow_ops
 import os, os.path
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
 import load_batch
-from nets import txtbox_300
 from nets import nets_factory
 slim = tf.contrib.slim
 
@@ -29,7 +23,7 @@ DATA_FORMAT = 'NCHW'
 # SSD evaluation Flags.
 # =========================================================================== #
 tf.app.flags.DEFINE_float(
-	'select_threshold', 0.5, 'Selection threshold.')
+	'select_threshold', 0.1, 'Selection threshold.')
 tf.app.flags.DEFINE_integer(
 	'select_top_k', 400, 'Select top-k detected bounding boxes.')
 tf.app.flags.DEFINE_integer(
@@ -112,6 +106,7 @@ def main(_):
 		network_fn = nets_factory.get_network(FLAGS.model_name)
 		net = network_fn()
 		out_shape = net.params.img_shape
+		out_shape = (300,300)
 		anchors = net.anchors(out_shape)
 		# =================================================================== #
 		# Create a dataset provider and batches.
@@ -197,17 +192,17 @@ def main(_):
 				# Precison and recall values.
 				prec, rec = tfe.precision_recall(*tp_fp_metric[0][c])
 
-				op = tf.summary.scalar('precision', prec, collections=[])
+				op = tf.summary.scalar('precision', tf.reduce_mean(prec), collections=[])
 				# op = tf.Print(op, [v], summary_name)
 				tf.add_to_collection(tf.GraphKeys.SUMMARIES, op)
 
-				op = tf.summary.scalar('recall', rec, collections=[])
+				op = tf.summary.scalar('recall', tf.reduce_mean(rec), collections=[])
 				# op = tf.Print(op, [v], summary_name)
 				tf.add_to_collection(tf.GraphKeys.SUMMARIES, op)
 
 				# Average precision VOC07.
-				#v = tfe.average_precision_voc07(prec, rec)				
-				v = (prec + rec)/2.
+				v = tfe.average_precision_voc12(prec, rec)				
+				#v = (prec + rec)/2.
 				summary_name = 'ICDAR13/%s' % c
 				op = tf.summary.scalar(summary_name, v, collections=[])
 				# op = tf.Print(op, [v], summary_name)

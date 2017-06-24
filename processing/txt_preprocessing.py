@@ -71,13 +71,14 @@ def preprocess_for_train(image, labels, bboxes, height, width,
         image = tf_image.resize_image(image, out_shape,
                                       method=tf.image.ResizeMethod.BILINEAR,
                                       align_corners=False)
-
+        image = tf.clip_by_value(image, 0., 1.)
         image, bboxes = tf_image.random_flip_left_right(image, bboxes)
         num = tf.reduce_sum(tf.cast(labels, tf.int32))
 
         image.set_shape([out_shape[0], out_shape[1], 3])
         tf_image.tf_summary_image(image, bboxes)
         image = image * 255.
+
         image = tf_image.tf_image_whitened(image, [_R_MEAN,_G_MEAN,_B_MEAN])
 
         bboxes = tf.minimum(bboxes, 1.0)
@@ -161,7 +162,7 @@ def preprocess_for_eval(image, labels, bboxes, height, width,
             mask = tf.logical_not(tf.cast(difficults, tf.bool))
             labels = tf.boolean_mask(labels, mask)
             bboxes = tf.boolean_mask(bboxes, mask)
-
+        image = tf.clip_by_value(image, 0., 255.)
         image = tf_image.tf_image_whitened(image, [_R_MEAN, _G_MEAN, _B_MEAN])
         #image = image/255.
         #image = tf.clip_by_value(image, 0., 255.)

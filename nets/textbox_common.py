@@ -36,10 +36,10 @@ def tf_text_bboxes_encode_layer(bboxes,
 		
 
 		yref, xref, href, wref = anchors_layer
-		ymin = yref - href / 2.
-		xmin = xref - wref / 2.
-		ymax = yref + href / 2.
-		xmax = xref + wref / 2. 
+		ymin = np.maximum(yref - href / 2.,0.)
+		xmin = np.maximum(xref - wref / 2.,0.)
+		ymax = np.minimum(yref + href / 2.,1.)
+		xmax = np.minimum(xref + wref / 2.,1.)
 		vol_anchors = (xmax - xmin) * (ymax - ymin)
 		
 		# Initialize tensors...
@@ -250,12 +250,12 @@ def textbox_anchor_one_layer(img_shape,
 				w[i] = sizes[0] / img_shape[1] * math.sqrt(r)
 		h[i] = sizes[0] / img_shape[0] / 3.
 		w[i] = sizes[0] / img_shape[1] * 1.6
-		if feat_size[0] != 38:
-			h[i+1] = np.array(math.sqrt(sizes[0] * sizes[1] )/ img_shape[0], dtype = dtype)
-			w[i+1] = np.array(math.sqrt(sizes[0] * sizes[1] )/ img_shape[0], dtype = dtype)
-		else:
+		if feat_size[0] == 38:
 			h[i+1] = sizes[0] / img_shape[0] / 4.
 			w[i+1] = sizes[0] / img_shape[1] / 2.
+		else:
+			h[i+1] = sizes[0] / img_shape[0] 
+			w[i+1] = sizes[0] / img_shape[1] * 2
  		return y_out, x_out, h, w
 
 

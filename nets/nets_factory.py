@@ -21,21 +21,21 @@ import functools
 
 import tensorflow as tf
 
-from nets import txtbox_512
+from nets import txtbox_700
 from nets import txtbox_300
 
 
 slim = tf.contrib.slim
 
 networks_map = {'text_box_300': txtbox_300.TextboxNet,
-                'text_box_512': txtbox_512.TextboxNet,
+                'text_box_700': txtbox_700.TextboxNet,
                }
 
 arg_scopes_map = {'text_box_300': txtbox_300.ssd_arg_scope,
-                  'text_box_512': txtbox_512.ssd_arg_scope,
+                  'text_box_700': txtbox_700.ssd_arg_scope,
                  }
 networks_obj = {'text_box_300': txtbox_300.TextboxNet,
-                'text_box_512': txtbox_512.TextboxNet,
+                'text_box_700': txtbox_700.TextboxNet,
                 }
 
 def get_network(name):

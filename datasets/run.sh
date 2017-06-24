@@ -14,35 +14,74 @@ CHECKPOINT_PATH=./logs_426/model.ckpt-48406
 
 CHECKPOINT_PATH=./checkpoints/vgg_16.ckpt
 CHECKPOINT_PATH=./checkpoints/model.ckpt-13889
-CHECKPOINT_PATH=./logs/momentum_0.001/model.ckpt-21218
+CHECKPOINT_PATH=./logs/train/adam_new/model.ckpt-14150
 CHECKPOINT_PATH=./checkpoints/vgg_16.ckpt
 DATASET_DIR=./data/sythtext/
-TRAIN_DIR=./logs/train/vgg_no_batch_3
+TRAIN_DIR=./logs/train/momentum_batch
 TF_ENABLE_WINOGRAD_NONFUSED=1 CUDA_VISIBLE_DEVICES=0,1,2,3 setsid python Textbox_train.py \
 	--train_dir=${TRAIN_DIR} \
 	--dataset_dir=${DATASET_DIR} \
 	--save_summaries_secs=60 \
 	--save_interval_secs=1800 \
+    --num_readers=4 \
+    --num_preprocessing_threads=8 \
     --optimizer=momentum \
 	--weight_decay=0.0005 \
 	--learning_rate=0.001 \
-	--batch_size=32 \
-	--num_samples=300000 \
-	--gpu_memory_fraction=0.95 \
+	--batch_size=8 \
+	--num_samples=800000 \
+	--gpu_memory_fraction=0.45 \
 	--max_number_of_steps=150000 \
-    --use_batch=False \
+    --use_batch=True \
 	--num_clones=4 \
     --negative_ratio=3 \
+    --fine_tune=True \
     --checkpoint_path=${CHECKPOINT_PATH} \
     --checkpoint_model_scope=vgg_16 \
     --ignore_missing_vars=True \
 
-    
+
+CHECKPOINT_PATH=./checkpoints/vgg_16.ckpt
+DATASET_DIR=./data/sythtext
+TRAIN_DIR=./logs/train/momentum_vgg
+TF_ENABLE_WINOGRAD_NONFUSED=1 CUDA_VISIBLE_DEVICES=4,5,6,7 setsid python Textbox_train.py \
+    --train_dir=${TRAIN_DIR} \
+    --dataset_dir=${DATASET_DIR} \
+    --save_summaries_secs=60 \
+    --save_interval_secs=1800 \
+    --optimizer=momentum \
+    --weight_decay=0.0001 \
+    --learning_rate=0.005 \
+    --batch_size=32 \
+    --num_samples=1600000 \
+    --gpu_memory_fraction=0.95 \
+    --max_number_of_steps=120000 \
+    --use_batch=False \
+    --num_clones=4 \
+    --negative_ratio=20 \
+    --learning_rate_decay_factor=0.2 \
+    --fine_tune=False \
+    --checkpoint_path=${CHECKPOINT_PATH} \
+    --checkpoint_model_scope=vgg_16 \
+    --ignore_missing_vars=True \   
 
 
 
-CHECKPOINT_PATH=./logs/train/vgg_no_batch_3
-EVAL_DIR=./logs/eval/vgg_no_batch_3
+CHECKPOINT_PATH=./logs/train/momentum_batch
+EVAL_DIR=./logs/eval/momentum_batch
+DATASET_DIR=./data/ICDAR2013/test
+CUDA_VISIBLE_DEVICES=4 setsid python eval.py \
+    --eval_dir=${EVAL_DIR} \
+    --dataset_dir=${DATASET_DIR} \
+    --checkpoint_path=${CHECKPOINT_PATH} \
+    --wait_for_checkpoints=True \
+    --batch_size=1 \
+    --use_batch=True \
+    --gpu_memory_fraction=0.02 \
+
+
+CHECKPOINT_PATH=./logs/train/momentum_300
+EVAL_DIR=./logs/eval/momentum_300
 DATASET_DIR=./data/ICDAR2013/test
 CUDA_VISIBLE_DEVICES=0 setsid python eval.py \
     --eval_dir=${EVAL_DIR} \
@@ -53,20 +92,7 @@ CUDA_VISIBLE_DEVICES=0 setsid python eval.py \
     --use_batch=False \
     --gpu_memory_fraction=0.02 \
 
-
-CHECKPOINT_PATH=./logs/train/vgg_no_batch
-EVAL_DIR=./logs/eval/vgg_no_batch_train
-DATASET_DIR=./data/ICDAR2013/train
-CUDA_VISIBLE_DEVICES=6 setsid python eval.py \
-    --eval_dir=${EVAL_DIR} \
-    --dataset_dir=${DATASET_DIR} \
-    --checkpoint_path=${CHECKPOINT_PATH} \
-    --wait_for_checkpoints=True \
-    --batch_size=1 \
-    --use_batch=False \
-    --gpu_memory_fraction=0.02 \
-
-
+watch nvidia-smi
 ###########################################
 CHECKPOINT_PATH=./checkpoints/model.ckpt-32130
 DATASET_DIR=./data/ICDAR2013/train
@@ -104,49 +130,23 @@ CUDA_VISIBLE_DEVICES=0 setsid python eval.py \
 
 ###################################
 
-mo
-CHECKPOINT_PATH=./checkpoints/vgg_16.ckpt
-CHECKPOINT_PATH=./checkpoints/model.ckpt-12325
-DATASET_DIR=./data/sythtext/
-TRAIN_DIR=./logs/
-python Textbox_train.py \
-	--train_dir=${TRAIN_DIR} \
-	--dataset_dir=${DATASET_DIR} \
-	--save_summaries_secs=60 \
-	--save_interval_secs=600 \
-	--weight_decay=0.0005 \
-	--optimizer=momentum \
-	--learning_rate=0.004 \
-	--loss_alpha=1.0 \
-	--batch_size=1 \
-	--gpu_train=/cpu:0 \
-	--gpu_memory_fraction=0.95 \
-	--max_number_of_steps=400000 \
-	--checkpoint_path=${CHECKPOINT_PATH} \
-    --checkpoint_model_scope=vgg_16 \
-    --ignore_missing_vars=True \
-\
 
-CHECKPOINT_PATH=./checkpoints/vgg_16.ckpt
-DATASET_DIR=./data/sythtext/
-TRAIN_DIR=./logs/
-python Train_single_gpu.py \
-	--train_dir=${TRAIN_DIR} \
-	--dataset_dir=${DATASET_DIR} \
-	--save_summaries_secs=60 \
-	--save_interval_secs=600 \
-	--weight_decay=0.0005 \
-	--optimizer=momentum \
-	--learning_rate=0.001 \
-	--loss_alpha=1.0 \
-	--batch_size=1 \
-	--gpu_train=/cpu:0 \
-	--gpu_memory_fraction=0.95 \
-	--max_number_of_steps=400000 \
-	--checkpoint_path=${CHECKPOINT_PATH} \
-    --checkpoint_model_scope=vgg_16 \
-    --ignore_missing_vars=True 
+CUDA_VISIBLE_DEVICES=0 setsid python train.py \
+    --visdom=True \
+    --send_images_to_visdom=True \
+    --batch_size=32 \
+    --voc_root=data/VOCdevkit/
 
+
+CHECKPOINT_PATH=./logs/
+EVAL_DIR=./logs/evals/
+DATASET_DIR=./data/sythtext/
+python eval.py \
+    --eval_dir=${EVAL_DIR} \
+    --dataset_dir=${DATASET_DIR} \
+    --checkpoint_path=${CHECKPOINT_PATH} \
+    --wait_for_checkpoints=False \
+    --batch_size=1 \
 
 
 

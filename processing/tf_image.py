@@ -155,7 +155,7 @@ def resize_image_bboxes_with_crop_or_pad2(image, bboxes,height, width):
     """
     height = tf.cast(height, tf.int32)
     width  = tf.cast(width , tf.int32)
-    ratio= tf.random_uniform([], minval=-1, maxval=3, dtype=tf.int32)
+    ratio= tf.random_uniform([], minval=1, maxval=3, dtype=tf.int32)
     def f1():
         return image, bboxes
 
@@ -286,7 +286,7 @@ def Random_crop(image, labels,bboxes):
         num = tf.constant(1)
 
         def random_distorted_bounding_box_crop(vals, index):
-            object_covered = np.linspace(0, 1., 21)
+            object_covered = np.linspace(0.1, 1., 19)
             image, labels, bboxes, num = vals
             return distorted_bounding_box_crop(image, labels, bboxes,
                                                min_object_covered=object_covered[index])
@@ -294,7 +294,7 @@ def Random_crop(image, labels,bboxes):
         vals = \
              _apply_with_random_selector_tuples((image, labels, bboxes, num),
                                                         random_distorted_bounding_box_crop,
-                                                        num_cases=21)
+                                                        num_cases=19)
         image, labels, bboxes, num = vals
 
         return image, labels, bboxes

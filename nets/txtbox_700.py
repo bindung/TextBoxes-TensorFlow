@@ -38,12 +38,12 @@ class TextboxNet(object):
 	Implementation of the Textbox 300 network.
 
 	The default features layers with 300x300 image input are:
-	  conv4_3 ==> 38 x 38
-	  fc7 ==> 19 x 19
-	  conv6_2 ==> 10 x 10
-	  conv7_2 ==> 5 x 5
-	  conv8_2 ==> 3 x 3
-	  pool6 ==> 1 x 1
+	  conv4_3 ==> 88 x 88
+	  fc7 ==> 44 x 44
+	  conv6_2 ==> 22 x 22
+	  conv7_2 ==> 11 x 11
+	  conv8_2 ==> 6 x 6
+	  pool6 ==> 3 x 3
 	anchor_sizes=[(21., 45.),
 		  (45., 99.),
 		  (99., 153.),
@@ -60,21 +60,20 @@ class TextboxNet(object):
 	The default image size used to train this network is 300x300.
 	"""
 	default_params = TextboxParams(
-		img_shape=(512, 512),
+		img_shape=(700, 700),
 		num_classes=2,
-		feat_layers=['conv4', 'conv7', 'conv8', 'conv9', 'conv10', 'conv11','conv12'],
-		feat_shapes=[(64, 64), (32, 32), (16, 16), (8, 8), (4, 4), (2, 2), (1, 1)],
+		feat_layers=['conv4', 'conv7', 'conv8', 'conv9', 'conv10', 'conv11'],
+		feat_shapes=[(88, 88), (44, 44), (22, 22), (11, 11), (6, 6), (3, 3)],
 		scale_range=[0.15, 0.95],
-		anchor_ratios=[1,1.5,2,3,5,7,10],
-		normalizations=[20, -1, -1, -1, -1, -1,-1],
+		anchor_ratios=[1,2,3,5,7,10],
+		normalizations=[20, -1, -1, -1, -1, -1],
 		prior_scaling=[0.1, 0.1, 0.2, 0.2],
-		anchor_sizes=[(23., 51.),
-		              (51., 99.),
-		              (133., 153.),
-		              (215., 207.),
-		              (296., 261.),
-		              (379., 315.),
-		              (461., 543.)],
+		anchor_sizes=[(30., 60.),
+				      (60., 114.),
+				      (114., 168.),
+			  	      (168., 222.),
+					  (222., 276.),
+					  (276., 330.)],
 		scales = [0.09 + i*0.66/6  for i in range(7)],
 		#scales = [0.05, 0.1,0.15,0.25,0.4,0.65],
 		match_threshold = 0.5
@@ -255,12 +254,6 @@ def text_net(inputs,
 		end_points[end_point] = net
 		end_point = 'conv11'
 		with tf.variable_scope(end_point):
-			net = conv2d(net, 128, [1, 1], scope='conv1x1',use_batch=use_batch, batch_norm_params=batch_norm_params)
-			net = conv2d(net, 256, [3, 3], scope='conv3x3', padding='VALID',use_batch=use_batch, batch_norm_params=batch_norm_params)
-		end_points[end_point] = net
-
-		end_point = 'conv12'
-		with tf.variable_scope(end_point):
 			net = slim.avg_pool2d(net, [2,2], scope='pool6', padding = 'VALID')
 		end_points[end_point] = net
 
@@ -307,7 +300,7 @@ def text_multibox_layer(layer,
 	"""
 	batch_norm_params = {
 	  # Decay for the moving averages.
-	  'decay': 0.9990,
+	  'decay': 0.9997,
 	  # epsilon to prevent 0s in variance.
 	  'epsilon': 0.001,
 	  'is_training': is_training
@@ -316,7 +309,7 @@ def text_multibox_layer(layer,
 	if normalization > 0:
 		net = custom_layers.l2_normalization(net, scaling=True)
 	# Number of anchors.
-	num_box = len(TextboxNet.default_params.anchor_ratios)
+	num_box = 7
 	num_classes = 2
 	# Location.
 	num_loc_pred = 2*num_box * 4
@@ -370,10 +363,10 @@ def ssd_arg_scope(weight_decay=0.0005, data_format='NHWC'):
 	with slim.arg_scope([slim.conv2d, slim.fully_connected],
 						activation_fn=tf.nn.relu,
 						weights_regularizer=slim.l2_regularizer(weight_decay),
-						weights_initializer=tf.truncated_normal_initializer(stddev=0.03, seed = 1000),
-						#weights_initializer=tf.contrib.layers.xavier_initializer(),
+						#weights_initializer=tf.truncated_normal_initializer(stddev=0.03, seed = 1000),
+						weights_initializer=tf.contrib.layers.xavier_initializer(),
 						biases_initializer=tf.zeros_initializer()):
-		with slim.arg_scope([slim.conv2d, slim.max_pool2d],
+		with slim.arg_scope([slim.conv2d, slim.max_pool2d, slim.avg_pool2d],
 							padding='SAME',
 							data_format=data_format):
 			with slim.arg_scope([custom_layers.pad2d,
@@ -398,195 +391,64 @@ def text_losses(logits, localisations,
 	with tf.name_scope(scope, 'text_loss'):
 		alllogits = []
 		alllocalization = []
-		allglocalization = []
-		allgscores = []
 		for i in range(len(logits)):
 			alllogits.append(tf.reshape(logits[i], [-1, 2]))
-			allgscores.append(tf.reshape(gscores[i], [-1]))
-			allglocalization.append(tf.reshape(glocalisations[i], [-1,4]))
 			alllocalization.append(tf.reshape(localisations[i], [-1,4]))
 
 		alllogits = tf.concat(alllogits, 0)
-		allgscores = tf.concat(allgscores, 0)
 		alllocalization =tf.concat(alllocalization, 0)
-		allglocalization =tf.concat(allglocalization, 0)
 
-		pmask = allgscores > match_threshold
+		pmask = gscores > match_threshold
 		ipmask = tf.cast(pmask ,tf.int32)
-		n_pos = tf.reduce_sum(ipmask)+1
-		num = tf.ones_like(allgscores)
-		n = tf.reduce_sum(num)
 		fpmask = tf.cast(pmask , tf.float32)
-		nmask = allgscores <= match_threshold
-		inmask = tf.cast(nmask, tf.int32)
-		fnmask = tf.cast(nmask, tf.float32)
+		n_pos = tf.reduce_sum(fpmask,name = 'num_of_positive')
+		num = tf.ones_like(gscores, dtype = tf.float32)
+		n = tf.reduce_sum(num)
+		nmask = gscores <= match_threshold
 
 		loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=alllogits,labels=ipmask)
-		l_cross_pos = tf.losses.compute_weighted_loss(loss, fpmask)
-
-
-		#loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=alllogits,labels=ipmask)
-		l_cross_all_neg = tf.losses.compute_weighted_loss(loss, fnmask)
-		#l_cross_neg = tf.reduce_sum(loss * fnmask)/tf.cast(n_neg, tf.float32)
-		#l_cross_pos = tf.reduce_sum(loss * fpmask)/tf.cast(n_pos, tf.float32)
-		#loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=alllogits,labels=ipmask)
-
-		if use_hard_neg:
-			loss_neg = tf.where(pmask,
-							   tf.cast(tf.zeros_like(ipmask),tf.float32),
-							   loss)
-			loss_neg_flat = tf.reshape(loss_neg, [-1])
-			n_neg = tf.minimum(3*n_pos, tf.cast(n,tf.int32))
-			val, idxes = tf.nn.top_k(loss_neg_flat, k=n_neg)
-			minval = val[-1]
-			nmask = tf.logical_and(nmask, loss_neg >= minval)
-
-			fnmask = tf.cast(nmask, tf.float32)
-			l_cross_neg = tf.losses.compute_weighted_loss(loss, fnmask)
-		else:
-			l_cross_neg = 0.
-		n_neg = tf.reduce_sum(tf.cast(nmask, tf.int32))
-
-		l_cross_neg = l_cross_all_neg + l_cross_neg
-
-
-		#all_mask = tf.logical_or(pmask, nmask)
-		#all_fmask = tf.cast(all_mask, tf.float32)
-		#total_cross = tf.reduce_sum(loss * all_fmask)/tf.cast(n_pos+n_neg, tf.float32)
-		weights = tf.expand_dims(alpha * fpmask, axis=-1)
-		l_loc = custom_layers.abs_smooth(alllocalization - allglocalization)
-		l_loc = tf.losses.compute_weighted_loss(l_loc, weights)
-
-		#tf.losses.add_loss(l_cross_neg)
+		#l_cross_pos = tf.losses.compute_weighted_loss(loss, fpmask)
+		l_cross_pos = tf.div(tf.reduce_sum(loss * fpmask), n_pos ,name = 'l_cross_pos')
 		#tf.losses.add_loss(l_cross_pos)
-		#tf.losses.add_loss(l_loc)
+
+		loss_neg = tf.where(pmask,
+						   tf.cast(tf.zeros_like(ipmask),tf.float32),
+						   loss)
+		loss_neg_flat = tf.reshape(loss_neg, [-1])
+		n_neg = tf.minimum(negative_ratio*n_pos, n)
+		n_neg_i = tf.cast(n_neg, tf.int32,name = 'num_of_negative')
+		val, idxes = tf.nn.top_k(loss_neg_flat, k=n_neg_i)
+		minval = val[-1]
+		nmask = tf.logical_and(nmask, loss_neg >= minval)
+
+		fnmask = tf.cast(nmask, tf.float32)
+		#l_cross_neg = tf.losses.compute_weighted_loss(loss, fnmask)
+		l_cross_neg = tf.div(tf.reduce_sum(loss * fnmask), n_neg ,name = 'l_cross_neg')
+		#tf.losses.add_loss(l_cross_neg)
+		all_mask =tf.cast(tf.logical_or(nmask, pmask), tf.float32)
+		l_cross = tf.div(tf.reduce_sum(loss * all_mask), n_pos, name = 'l_cross')
+		tf.losses.add_loss(l_cross)
+
+		weights = tf.expand_dims(fpmask, axis=-1)
+		l_loc = custom_layers.abs_smooth(alllocalization - glocalisations)
+		#l_loc = tf.losses.compute_weighted_loss(l_loc, weights)
+		l_loc = tf.div(tf.reduce_sum(l_loc * weights), n_pos ,name = 'l_loc')
+		tf.losses.add_loss(l_loc)
+
 
 		with tf.name_scope('total'):
 				# Add to EXTRA LOSSES TF.collection
-				total_cross = tf.add(l_cross_pos, l_cross_neg, 'cross_entropy')
-				#total_cross = tf.identity(total_cross, name = 'total_cross')
-				n_pos = tf.identity(n_pos, name = 'num_of_positive')
-				n_neg = tf.identity(n_neg, name = 'num_of_nagitive')
-				l_cross_neg = tf.identity(l_cross_neg, name = 'l_cross_neg')
-				l_cross_pos = tf.identity(l_cross_pos, name = 'l_cross_pos')
-				l_loc = tf.identity(l_loc, name = 'l_loc')
 				tf.add_to_collection('EXTRA_LOSSES', n_pos)
 				tf.add_to_collection('EXTRA_LOSSES', n_neg)
 				tf.add_to_collection('EXTRA_LOSSES', l_cross_pos)
 				tf.add_to_collection('EXTRA_LOSSES', l_cross_neg)
 				tf.add_to_collection('EXTRA_LOSSES', l_loc)
-				tf.add_to_collection('EXTRA_LOSSES', total_cross)
 
-				total_loss = tf.add_n([l_loc, total_cross], 'total_loss')
+				total_loss = tf.add_n([l_loc, l_cross_pos, l_cross_neg], 'total_loss')
 				tf.add_to_collection('EXTRA_LOSSES', total_loss)
 
 	return total_loss
 
-
-"""
-def text_losses(logits, localisations,
-			   glocalisations, gscores,
-			   match_threshold,
-			   negative_ratio=3.,
-			   alpha=1.,
-			   label_smoothing=0.,
-			   scope=None):
-	'''
-	Loss functions for training the text box network.
-
-	Arguments:
-	  logits: (list of) predictions logits Tensors;
-	  localisations: (list of) localisations Tensors;
-	  glocalisations: (list of) groundtruth localisations Tensors;
-	  gscores: (list of) groundtruth score Tensors;
-
-	return: loss
-	'''
-	with tf.name_scope(scope, 'text_loss'):
-		l_cross_pos = []
-		l_cross_neg = []
-		l_loc = []
-		n_poses = []
-		for i in range(len(logits)):
-			dtype = logits[i].dtype
-			with tf.name_scope('block_%i' % i):
-				pmask = gscores[i] > match_threshold
-				ipmask = tf.cast(pmask, tf.int32)
-				n_pos = tf.reduce_sum(ipmask) + 1
-				fpmask = tf.cast(pmask, tf.float32)
-				nmask = gscores[i] < match_threshold
-				inmask = tf.cast(nmask, tf.int32)
-				fnmask = tf.cast(nmask, tf.float32)
-				num = tf.ones_like(gscores[i])
-				n = tf.reduce_sum(num)
-				n_poses.append(n_pos)
-
-				
-
-				with tf.name_scope('cross_entropy_neg'):
-					loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits[i],labels=ipmask)
-					'''
-					loss_neg_flat = tf.reshape(loss, [-1])
-					n_neg = tf.minimum(tf.size(loss_neg_flat)/2, 3*n_pos)
-					val, idxes = tf.nn.top_k(loss_neg_flat, k=n_neg)
-					minval = val[-1]
-					nmask = tf.logical_and(nmask, loss > minval)
-					fnmask = tf.cast(nmask, tf.float32)
-					'''
-					loss = tf.losses.compute_weighted_loss(loss, fnmask)
-					#loss = tf.square(fnmask*(logits[i][:,:,:,:,:,0] - fnmask))
-					#loss = alpha*tf.reduce_mean(loss)
-					l_cross_neg.append(loss)
-				# Add cross-entropy loss.
-				with tf.name_scope('cross_entropy_pos'):
-					loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits[i],labels=ipmask)
-					#loss = tf.square(fpmask*(logits[i][:,:,:,:,:,1] - fpmask))
-					#loss = alpha*tf.reduce_mean(loss)
-					'''
-					loss_neg = tf.where(pmask,
-										   tf.cast(tf.zeros_like(ipmask),tf.float32),
-										   loss)
-					loss_neg_flat = tf.reshape(loss_neg, [-1])
-					n_neg = tf.minimum(3*n_pos, tf.cast(n,tf.int32))
-					val, idxes = tf.nn.top_k(loss_neg_flat, k=n_neg)
-					minval = val[-1]
-					nmask = tf.logical_and(nmask, loss > minval)
-					mask = tf.logical_or(nmask, pmask)
-					fmask = tf.cast(mask, tf.float32)
-					'''
-					#loss = tf.losses.compute_weighted_loss(loss, fpmask)
-					loss = tf.reduce_mean(loss)
-					l_cross_pos.append(loss)
-				
-
-					#tf.losses.add_loss(loss)
-				# Add localization loss: smooth L1, L2, ...
-				with tf.name_scope('localization'):
-					# Weights Tensor: positive mask + random negative.
-					weights = tf.expand_dims(alpha * fpmask, axis=-1)
-					loss = custom_layers.abs_smooth(localisations[i] - glocalisations[i])
-					loss = tf.losses.compute_weighted_loss(loss, weights)
-					l_loc.append(loss)
-					#tf.losses.add_loss(loss)
-		# Additional total losses...
-		with tf.name_scope('total'):
-			total_cross_pos = tf.add_n(l_cross_pos, 'cross_entropy_pos')
-			total_cross_neg = tf.add_n(l_cross_neg, 'cross_entropy_neg')
-			total_cross = tf.add(total_cross_pos, total_cross_neg, 'cross_entropy')
-			total_loc = tf.add_n(l_loc, 'localization')
-			numofpositive = tf.add_n(n_poses, 'numofpositive')
-			# Add to EXTRA LOSSES TF.collection
-			tf.add_to_collection('EXTRA_LOSSES', numofpositive)
-			tf.add_to_collection('EXTRA_LOSSES', total_cross_pos)
-			tf.add_to_collection('EXTRA_LOSSES', total_cross_neg)
-			tf.add_to_collection('EXTRA_LOSSES', total_cross)
-			tf.add_to_collection('EXTRA_LOSSES', total_loc)
-
-			total_loss = tf.add(total_loc, total_cross_pos, 'total_loss')
-			tf.add_to_collection('EXTRA_LOSSES', total_loss)
-		
-		return total_loss
-"""
 
 
 
