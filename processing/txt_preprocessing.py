@@ -182,7 +182,7 @@ def preprocess_image(image,
                      height,
                      width,
                      out_shape,
-                     data_format = 'NCHW',
+                     data_format = 'NHWC',
                      is_training=False,
                      **kwargs):
     """Pre-process an given image.

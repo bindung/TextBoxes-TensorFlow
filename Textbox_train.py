@@ -159,7 +159,7 @@ tf.app.flags.DEFINE_integer(
 tf.app.flags.DEFINE_string(
 	'model_name', 'text_box_300', 'The name of the architecture to train.')
 tf.app.flags.DEFINE_string(
-	'data_format', 'NCHW', 'data format.')
+	'data_format', 'NHWC', 'data format.')
 tf.app.flags.DEFINE_string(
 	'preprocessing_name', None, 'The name of the preprocessing to use. If left '
 	'as `None`, then the model_name flag is used.')
@@ -383,7 +383,7 @@ def main(_):
                                 inter_op_parallelism_threads = 0,
                                 intra_op_parallelism_threads = 1,)
 		saver = tf.train.Saver(max_to_keep=5,
-							   keep_checkpoint_every_n_hours=1.0,
+							   keep_checkpoint_every_n_hours=0.1,
 							   write_version=2,
 							   pad_step_number=False)
 
