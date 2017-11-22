@@ -1,0 +1,12 @@
+CHECKPOINT_PATH=./logs/train_NHWC
+EVAL_DIR=./logs/eval
+#DATASET_DIR=./data/ICDAR2013/test
+DATASET_DIR=./data/ICDAR2013
+CUDA_VISIBLE_DEVICES=4 setsid python eval.py \
+    --eval_dir=${EVAL_DIR} \
+    --dataset_dir=${DATASET_DIR} \
+    --checkpoint_path=${CHECKPOINT_PATH} \
+    --wait_for_checkpoints=False \
+    --batch_size=1 \
+    --gpu_memory_fraction=0.02 \
+    --use_batch=False

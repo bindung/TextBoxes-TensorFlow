@@ -1,0 +1,20 @@
+#!/bin/bash
+CHECKPOINT_PATH=./data/vgg_16.ckpt
+DATASET_DIR=./data/sythtext/
+TRAIN_DIR=./logs/train_NHWC
+CUDA_VISIBLE_DEVICES=0,1 setsid python Textbox_train.py \
+    --train_dir=${TRAIN_DIR} \
+    --dataset_dir=${DATASET_DIR} \
+    --save_summaries_secs=60 \
+    --save_interval_secs=1800 \
+    --weight_decay=0.0005 \
+    --learning_rate=0.001 \
+    --batch_size=8 \
+    --num_samples=800000 \
+    --gpu_memory_fraction=0.42 \
+    --max_number_of_steps=500000 \
+    --use_batch=False \
+    --num_clones=2 \
+    --checkpoint_path=${CHECKPOINT_PATH} \
+    --checkpoint_model_scope=vgg_16 \
+    --ignore_missing_vars=True \
