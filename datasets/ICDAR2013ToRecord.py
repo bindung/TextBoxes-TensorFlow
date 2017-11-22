@@ -81,6 +81,7 @@ def readGT(gt_dir):
 				gt_names.append(imname)
 
 			except ValueError:
+                                print("fail file_path")
 				pass
 
 	else:
